@@ -10,6 +10,7 @@ import {
   Modal,
   TextInput,
   Share as ShareAPI,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +22,7 @@ import { formatPhoneNumber } from '@/utils/phoneUtils';
 import { pdfExportService, HouseholdData, InventoryData, ChecklistData, MapData } from '@/services/pdf-export';
 import { captureRef } from 'react-native-view-shot';
 import { generateAllChecklists } from '@/lib/checklist';
+import * as ImagePicker from 'expo-image-picker';
 import { 
   Home,
   Users,
@@ -35,6 +37,7 @@ import {
   ChevronDown,
   UserMinus,
   FileText,
+  Camera,
 } from 'lucide-react-native';
 
 export default function HouseholdScreen() {
@@ -61,6 +64,8 @@ export default function HouseholdScreen() {
     petNotes: '',
   });
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const mapRef = useRef<View>(null);
 
   useEffect(() => {
@@ -94,17 +99,10 @@ export default function HouseholdScreen() {
           if (member.claimed_by) {
             const { data: account } = await supabase
               .from('accounts')
-              .select('id, display_name, user_id')
+              .select('id, display_name, user_id, photo_url')
               .eq('user_id', member.claimed_by)
               .single();
             
-            console.log('Member with account:', { 
-              memberName: member.name, 
-              claimedBy: member.claimed_by, 
-              account: account,
-              currentUserId: user?.id,
-              isCurrentUser: member.claimed_by === user?.id
-            });
             
             return { ...member, account, isCurrentUser: member.claimed_by === user?.id };
           }
@@ -133,11 +131,152 @@ export default function HouseholdScreen() {
 
       if (data) {
         setAccount(data);
+        setProfilePhoto(data.photo_url);
       }
     } catch (error) {
       console.error('Error fetching account:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImagePicker = async () => {
+    try {
+      // Request permission
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant permission to access your photo library.');
+        return;
+      }
+
+
+      // Show action sheet
+      Alert.alert(
+        'Select Photo',
+        'Choose how you want to add a profile photo',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Take Photo', 
+            onPress: () => takePhoto() 
+          },
+          { 
+            text: 'Choose from Library', 
+            onPress: () => pickImage() 
+          },
+          ...(profilePhoto ? [{ 
+            text: 'Remove Photo', 
+            style: 'destructive' as const,
+            onPress: () => removePhoto() 
+          }] : [])
+        ]
+      );
+    } catch (error) {
+      console.error('Error requesting permissions:', error);
+      Alert.alert('Error', 'Failed to access photo library');
+    }
+  };
+
+  const takePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant permission to access your camera.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadProfilePhoto(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Error', 'Failed to take photo');
+    }
+  };
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadProfilePhoto(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const uploadProfilePhoto = async (uri: string) => {
+    try {
+      setIsUploadingPhoto(true);
+
+      // Convert image to base64
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      
+      reader.onload = async () => {
+        try {
+          const base64 = reader.result as string;
+          
+          // For now, store the base64 data directly in the database
+          // This is a temporary solution until storage bucket is properly configured
+          const { error: updateError } = await supabase
+            .from('accounts')
+            .update({ photo_url: base64 })
+            .eq('user_id', user?.id);
+
+          if (updateError) throw updateError;
+
+          setProfilePhoto(base64);
+          // Refresh members to show updated profile photo
+          fetchMembers();
+          Alert.alert('Success', 'Profile photo updated successfully!');
+        } catch (error) {
+          console.error('Error uploading photo:', error);
+          Alert.alert('Error', 'Failed to upload photo');
+        } finally {
+          setIsUploadingPhoto(false);
+        }
+      };
+
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('Error processing photo:', error);
+      Alert.alert('Error', 'Failed to process photo');
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    try {
+      const { error } = await supabase
+        .from('accounts')
+        .update({ photo_url: null })
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      setProfilePhoto(null);
+      // Refresh members to show updated profile photo
+      fetchMembers();
+      Alert.alert('Success', 'Profile photo removed successfully!');
+    } catch (error) {
+      console.error('Error removing photo:', error);
+      Alert.alert('Error', 'Failed to remove photo');
     }
   };
 
@@ -656,14 +795,27 @@ export default function HouseholdScreen() {
                   }
                 );
               }},
-              { text: 'Photo', onPress: () => {
-                Alert.alert('Coming Soon', 'Photo upload feature will be available soon');
-              }}
+              { text: 'Photo', onPress: handleImagePicker }
             ]
           )}
         >
           <View style={styles.userAvatar}>
-            <Users size={32} color="#6B7280" />
+            {profilePhoto ? (
+              <Image source={{ uri: profilePhoto }} style={styles.profileImage} />
+            ) : (
+              <Users size={32} color="#6B7280" />
+            )}
+            {isUploadingPhoto && (
+              <View style={styles.uploadingOverlay}>
+                <ActivityIndicator size="small" color="#ffffff" />
+              </View>
+            )}
+            <TouchableOpacity 
+              style={styles.cameraButton}
+              onPress={handleImagePicker}
+            >
+              <Camera size={16} color="#ffffff" />
+            </TouchableOpacity>
           </View>
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{account?.display_name || 'User'}</Text>
@@ -792,7 +944,16 @@ export default function HouseholdScreen() {
               <View>
                 {members.map((member) => (
                   <View key={member.id} style={styles.memberItem}>
-                    <Users size={20} color="#6B7280" />
+                    <View style={styles.memberAvatar}>
+                      {(member as any).account?.photo_url ? (
+                        <Image 
+                          source={{ uri: (member as any).account.photo_url }} 
+                          style={styles.memberProfileImage} 
+                        />
+                      ) : (
+                        <Users size={20} color="#6B7280" />
+                      )}
+                    </View>
                     <View style={styles.memberInfo}>
                       <View style={styles.memberNameRow}>
                         <Text style={styles.memberName}>{member.name}</Text>
@@ -1546,8 +1707,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
+  memberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  memberProfileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
   memberInfo: {
-    marginLeft: 12,
     flex: 1,
   },
   memberNameRow: {
@@ -1669,6 +1843,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    position: 'relative',
+  },
+  profileImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraButton: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#354eab',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
   userInfo: {
     flex: 1,
