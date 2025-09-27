@@ -47,6 +47,7 @@ export interface Database {
           name: string;
           country: string;
           zip_code: string;
+          join_code: string;
           latitude?: number;
           longitude?: number;
           created_at: string;
@@ -57,6 +58,7 @@ export interface Database {
           name: string;
           country: string;
           zip_code: string;
+          join_code?: string;
           latitude?: number;
           longitude?: number;
           created_at?: string;
@@ -66,6 +68,7 @@ export interface Database {
           name?: string;
           country?: string;
           zip_code?: string;
+          join_code?: string;
           latitude?: number;
           longitude?: number;
           updated_at?: string;

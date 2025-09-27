@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
-  Pressable,
+  Share as ShareAPI,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +30,7 @@ import {
   Edit3,
   AlertCircle,
   ChevronDown,
+  UserMinus,
 } from 'lucide-react-native';
 
 export default function HouseholdScreen() {
@@ -95,7 +96,8 @@ export default function HouseholdScreen() {
               memberName: member.name, 
               claimedBy: member.claimed_by, 
               account: account,
-              currentUserId: user?.id 
+              currentUserId: user?.id,
+              isCurrentUser: member.claimed_by === user?.id
             });
             
             return { ...member, account, isCurrentUser: member.claimed_by === user?.id };
@@ -155,8 +157,36 @@ export default function HouseholdScreen() {
     );
   };
 
-  const handleInviteMembers = () => {
-    Alert.alert('Invite Members', 'Invite feature will be implemented soon.');
+  const handleInviteMembers = async () => {
+    if (!currentHousehold) {
+      Alert.alert('Error', 'No household selected');
+      return;
+    }
+
+    const inviteMessage = `🏠 Join my household "${currentHousehold.name}"!\n\nUse join code: ${currentHousehold.join_code}\n\nDownload Relief Ready app and use this code to join our emergency preparedness household.`;
+
+    try {
+      const result = await ShareAPI.share({
+        message: inviteMessage,
+        title: 'Join My Relief Ready Household',
+      });
+
+      if (result.action === ShareAPI.sharedAction) {
+        if (result.activityType) {
+          // Shared via activity type
+          console.log('Shared via:', result.activityType);
+        } else {
+          // Shared successfully
+          console.log('Invite shared successfully');
+        }
+      } else if (result.action === ShareAPI.dismissedAction) {
+        // Dismissed
+        console.log('Share dismissed');
+      }
+    } catch (error) {
+      console.error('Error sharing invite:', error);
+      Alert.alert('Error', 'Failed to share invite. You can manually share the join code: ' + currentHousehold.join_code);
+    }
   };
 
   const handleCreateHousehold = () => {
@@ -169,6 +199,68 @@ export default function HouseholdScreen() {
 
   const handleSwitchHousehold = (householdId: string) => {
     selectHousehold(householdId);
+  };
+
+  const handleLeaveHousehold = () => {
+    if (!currentHousehold || !user) return;
+
+    Alert.alert(
+      'Leave Household',
+      'Are you sure you want to leave this household? Your member profile will become available for others to claim.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Leave',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Find the member profile linked to current user
+              const { data: linkedMember, error: findError } = await supabase
+                .from('members')
+                .select('id')
+                .eq('household_id', currentHousehold.id)
+                .eq('claimed_by', user.id)
+                .single();
+
+              if (findError && findError.code !== 'PGRST116') {
+                throw findError;
+              }
+
+              if (linkedMember) {
+                // Unlink the member profile (set claimed_by to null)
+                const { error: unlinkError } = await supabase
+                  .from('members')
+                  .update({ claimed_by: null })
+                  .eq('id', linkedMember.id);
+
+                if (unlinkError) throw unlinkError;
+              }
+
+              // Remove user's membership from the household
+              const { error: membershipError } = await supabase
+                .from('memberships')
+                .delete()
+                .eq('household_id', currentHousehold.id)
+                .eq('account_id', (await supabase
+                  .from('accounts')
+                  .select('id')
+                  .eq('user_id', user.id)
+                  .single()).data?.id);
+
+              if (membershipError) throw membershipError;
+
+              // Refresh households to update the UI
+              await refreshHouseholds();
+              
+              Alert.alert('Success', 'You have left the household successfully.');
+            } catch (error: any) {
+              console.error('Error leaving household:', error);
+              Alert.alert('Error', error.message || 'Failed to leave household');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleDeleteHousehold = () => {
@@ -322,9 +414,14 @@ export default function HouseholdScreen() {
                 {currentHousehold?.name || 'No Household Selected'}
               </Text>
               {currentHousehold && (
-                <Text style={styles.householdLocation}>
-                  {currentHousehold.zip_code}, {currentHousehold.country}
-                </Text>
+                <>
+                  <Text style={styles.householdLocation}>
+                    {currentHousehold.zip_code}, {currentHousehold.country}
+                  </Text>
+                  <Text style={styles.householdJoinCode}>
+                    Join Code: {currentHousehold.join_code}
+                  </Text>
+                </>
               )}
             </View>
             {households.length > 1 && (
@@ -449,11 +546,6 @@ export default function HouseholdScreen() {
                       {member.medical_notes && (
                         <Text style={styles.memberDetail}>
                           🏥 {member.medical_notes}
-                        </Text>
-                      )}
-                      {(member as any).account && (
-                        <Text style={styles.memberAccount}>
-                          {(member as any).isCurrentUser ? 'Your account' : `Account: ${(member as any).account.display_name}`}
                         </Text>
                       )}
                     </View>
@@ -583,42 +675,25 @@ export default function HouseholdScreen() {
             <Text style={styles.actionText}>Join Household</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionItem} onPress={handleInviteMembers}>
-            <Share size={20} color="#354eab" />
-            <Text style={styles.actionText}>Invite Members</Text>
-          </TouchableOpacity>
-
           {currentHousehold && (
-            <TouchableOpacity 
-              style={[styles.actionItem, styles.deleteAction]} 
-              onPress={handleDeleteHousehold}
-            >
-              <X size={20} color="#EF4444" />
-              <Text style={[styles.actionText, styles.deleteActionText]}>Delete This Household</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity 
+                style={[styles.actionItem, styles.leaveAction]} 
+                onPress={handleLeaveHousehold}
+              >
+                <UserMinus size={20} color="#F59E0B" />
+                <Text style={[styles.actionText, styles.leaveActionText]}>Leave Household</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.actionItem, styles.deleteAction]} 
+                onPress={handleDeleteHousehold}
+              >
+                <X size={20} color="#EF4444" />
+                <Text style={[styles.actionText, styles.deleteActionText]}>Delete This Household</Text>
+              </TouchableOpacity>
+            </>
           )}
-        </View>
-      </View>
-
-      {/* Menu Options */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Options</Text>
-        <View style={styles.menuList}>
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => Alert.alert('Settings', 'Settings will be implemented soon.')}
-          >
-            <Settings size={20} color="#6B7280" />
-            <Text style={styles.menuText}>Settings</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.menuItem, styles.signOutItem]} 
-            onPress={handleSignOut}
-          >
-            <LogOut size={20} color="#354eab" />
-            <Text style={[styles.menuText, styles.signOutText]}>Sign Out</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -970,6 +1045,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
   },
+  leaveAction: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  leaveActionText: {
+    color: '#F59E0B',
+  },
   deleteAction: {
     borderBottomWidth: 0,
   },
@@ -1204,12 +1286,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
     lineHeight: 16,
   },
-  memberAccount: {
-    fontSize: 12,
-    color: '#059669',
-    fontStyle: 'italic',
-    marginTop: 2,
-  },
   memberActions: {
     flexDirection: 'row',
     gap: 8,
@@ -1350,6 +1426,12 @@ const styles = StyleSheet.create({
   householdLocation: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  householdJoinCode: {
+    fontSize: 12,
+    color: '#354eab',
+    fontWeight: '600',
+    marginTop: 2,
   },
   switchText: {
     fontSize: 14,
