@@ -278,7 +278,7 @@ Manage pending invitations you've sent to others to join your household. You can
   private buildContextualPrompt(userMessage: string, context: AppContext): string {
     const contextInfo = this.buildContextString(context);
     
-    return `You are ReadyBot, a friendly and helpful AI chatbot for the Relief Ready emergency preparedness app. You're having a conversation with a user about emergency preparedness.
+    return `You are ReadyBot, a friendly and helpful AI chatbot for the Relief Ready emergency preparedness app. You're having a natural conversation with a user.
 
 KNOWLEDGE BASE (Your Reference):
 ${this.knowledgeBase}
@@ -288,27 +288,28 @@ ${contextInfo}
 
 USER MESSAGE: "${userMessage}"
 
-IMPORTANT: This is a CONTINUING CONVERSATION. Do NOT reintroduce yourself or give generic responses. Build on what the user just said and respond naturally to their specific message.
+CONVERSATION GUIDELINES:
+- This is a CONTINUING CONVERSATION - don't reintroduce yourself unless it's the very first message
+- Respond naturally and directly to what the user just said
+- Be conversational, warm, and encouraging like a knowledgeable friend
+- Use natural, casual language with emojis and personality
+- Ask follow-up questions to better understand their needs
+- Be empathetic - emergency prep can feel overwhelming, so be supportive
+- Give practical, actionable advice when helpful
+- If you don't know something specific, admit it and offer to help find the answer
+- Keep responses conversational and not too long unless they ask for detailed info
+- If they're asking about something outside emergency prep, gently steer back but don't be pushy
 
-CONVERSATION RULES:
-- NEVER reintroduce yourself unless this is the very first message
-- ALWAYS respond directly to what the user just said
-- Build on previous context and continue the conversation naturally
-- If they answer a question you asked, acknowledge their answer and follow up
-- If they express concerns, address those specific concerns
-- If they ask a question, answer it directly without generic introductions
-- Keep the conversation flowing naturally like a real chat
+TOPICS YOU CAN DISCUSS:
+- Relief Ready app features and navigation
+- Emergency preparedness and disaster safety
+- Family safety planning
+- Supply recommendations
+- Weather and disaster awareness
+- General safety tips
+- App troubleshooting
 
-RESPONSE STYLE:
-- Be conversational, warm, and encouraging
-- Use natural, casual language
-- Ask follow-up questions that build on their responses
-- Be empathetic and supportive
-- Give practical, actionable advice
-- Use emojis and personality to make it engaging
-- Keep responses focused and relevant to what they said
-
-Remember: This is a chat conversation - respond naturally to what they just said, don't give generic responses!`;
+Remember: You're ReadyBot - be genuinely helpful, conversational, and make emergency preparedness feel less scary and more manageable!`;
 
   }
 
@@ -318,7 +319,9 @@ Remember: This is a chat conversation - respond naturally to what they just said
     if (context.household) {
       contextStr += `Household: ${context.household.name} (${context.household.country} ${context.household.postalCode})\n`;
       contextStr += `Members: ${context.household.memberCount}, Pets: ${context.household.petCount}\n`;
-      contextStr += `Risk Profile: ${context.household.riskProfile.join(', ')}\n`;
+      if (context.household.riskProfile && Array.isArray(context.household.riskProfile)) {
+        contextStr += `Risk Profile: ${context.household.riskProfile.join(', ')}\n`;
+      }
     }
     
     if (context.user) {
@@ -337,73 +340,17 @@ Remember: This is a chat conversation - respond naturally to what they just said
   }
 
   private getFallbackResponse(userMessage: string, context: AppContext): string {
-    const input = userMessage.toLowerCase();
+    // Simple fallback responses that encourage the user to try again
+    const responses = [
+      "I'm having trouble connecting right now, but I'd love to help! Can you try asking me again?",
+      "Hmm, I'm not quite sure how to respond to that. Could you rephrase your question?",
+      "I want to give you a good answer, but I'm having some technical difficulties. Mind trying again?",
+      "That's an interesting question! I'm having some connectivity issues right now though. Could you ask me again?",
+      "I'd love to help with that! Unfortunately I'm having some trouble at the moment. Can you try rephrasing your question?"
+    ];
     
-    // App navigation responses
-    if (input.includes('navigate') || input.includes('screen') || input.includes('tab')) {
-      return 'Hey! So the Relief Ready app has 5 main screens you can access through the bottom tabs: 📊 Dashboard (your disaster readiness overview), 📦 Inventory (manage supplies with AI), 💬 ReadyBot (that\'s me!), 🗺️ Map (live disaster feed), and 👤 Profile (household settings). They all work together to keep you prepared!';
-    }
-    
-    if (input.includes('dashboard')) {
-      return 'The Dashboard is like your command center! 🎯 It has those colorful readiness donuts for different disasters, "Next Best Actions" that adapt to your situation, and seasonal alerts. Tap any donut to see your detailed checklist for that disaster. Pretty neat, right?';
-    }
-    
-    if (input.includes('inventory')) {
-      return 'The Inventory screen is pretty cool! 🤖 You can add any emergency supply and our AI automatically figures out what category it belongs in. Just type something like "24 bottles of water" and it\'ll sort it out. There\'s also a sparkles ✨ button if you want to manually ask the AI for help!';
-    }
-    
-    if (input.includes('map')) {
-      return 'The Map is like having a live feed of what\'s happening around you! 🗺️ You can toggle different layers for wildfires, earthquakes, flood gauges, emergency shelters, and more. Tap on anything to get more details or directions. It\'s pretty handy for staying informed!';
-    }
-    
-    if (input.includes('profile') || input.includes('household')) {
-      return 'Profile is where you set up your household! 👨‍👩‍👧‍👦 Add family members with their ages and any medical notes, manage pets, set your location and risk profile, and organize emergency contacts. The more details you add, the better the app can tailor everything to your specific situation!';
-    }
-    
-    // Disaster preparedness responses
-    if (input.includes('hurricane') || input.includes('storm')) {
-      return 'Hurricanes can be pretty intense! 💨 Besides the basics like water and food, think about your home\'s vulnerabilities, evacuation timing, and what you\'ll need after the storm. The Relief Ready app helps track your hurricane readiness with personalized checklists. What\'s your biggest concern about hurricane prep?';
-    }
-    
-    if (input.includes('earthquake')) {
-      return 'Earthquakes are scary because they happen without warning! 🏠 Beyond "Drop, Cover, and Hold On," think about securing heavy furniture and having supplies in multiple locations. Practice really does help reduce panic. What part of earthquake prep worries you most?';
-    }
-    
-    if (input.includes('fire') || input.includes('wildfire')) {
-      return 'Wildfires are becoming more common unfortunately! 🔥 Creating defensible space around your home and having an evacuation plan ready are key. Air quality can be a big issue even miles away. Do you live in an area that\'s prone to wildfires?';
-    }
-    
-    if (input.includes('flood')) {
-      return 'Flooding can happen anywhere, not just near water! 🌊 Knowing your risk and having sandbags ready is important. Never underestimate moving water - it\'s stronger than it looks. Are you in a flood-prone area?';
-    }
-    
-    if (input.includes('tornado')) {
-      return 'Tornadoes can form super quickly! 🌪️ Do you know where the safest place in your home is? Usually it\'s a basement or interior room on the lowest floor with no windows. Having a weather radio and a family plan helps too. What\'s your tornado plan looking like?';
-    }
-    
-    if (input.includes('heat') || input.includes('temperature')) {
-      return 'Heat waves are getting more frequent and dangerous! ☀️ Staying hydrated and avoiding peak heat times is crucial. Do you have access to air conditioning or cooling centers nearby?';
-    }
-    
-    if (input.includes('checklist') || input.includes('supplies') || input.includes('kit')) {
-      return 'A good emergency kit is your foundation! 🎒 Start with the basics: water (1 gallon per person per day), non-perishable food, first aid supplies, flashlight, radio, and important documents. The Relief Ready app can personalize your checklist based on your household. What size family are you preparing for?';
-    }
-    
-    if (input.includes('plan') || input.includes('planning')) {
-      return 'Emergency planning gives you peace of mind! 📋 Having a family communication plan, meeting places, and practicing regularly makes a huge difference. The Relief Ready app helps you build a comprehensive plan. What\'s your biggest challenge with emergency planning?';
-    }
-    
-    if (input.includes('help') || input.includes('what can you do') || input.includes('assist')) {
-      return 'I\'m here to help with all things emergency preparedness! 🚨 I can guide you through the Relief Ready app, answer disaster preparedness questions, help with emergency planning, and just chat about staying safe. What\'s on your mind?';
-    }
-    
-    // Family safety responses
-    if (input.includes('family') || input.includes('safety') || input.includes('kids') || input.includes('children')) {
-      return 'Family safety is definitely the most important thing! 👨‍👩‍👧‍👦 That\'s exactly why having a solid emergency plan is so crucial. What specific concerns do you have about keeping your family safe during emergencies?';
-    }
-    
-    // Default encouraging response
-    return 'That\'s a great question! I\'d love to help you with that. Can you tell me a bit more about what you\'re looking for?';
+    // Return a random fallback response
+    return responses[Math.floor(Math.random() * responses.length)];
   }
 }
 
