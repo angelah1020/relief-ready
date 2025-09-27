@@ -7,6 +7,7 @@ import {
   Alert,
 } from 'react-native';
 import { useMap } from '@/contexts/MapContext';
+import LayerButton from './LayerButton';
 
 export default function MapControls() {
   const {
@@ -77,6 +78,9 @@ export default function MapControls() {
           !householdLocation && styles.controlIconDisabled
         ]}>🏠</Text>
       </TouchableOpacity>
+
+      {/* Layer Toggle Button */}
+      <LayerButton />
 
       {/* Refresh Control */}
       <TouchableOpacity

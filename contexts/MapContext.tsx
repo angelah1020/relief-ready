@@ -5,6 +5,7 @@ import { nwsApi, NWSAlert } from '@/lib/apis/nws';
 import { usgsApi, USGSEarthquake } from '@/lib/apis/usgs';
 import { nasaApi, NASAFireHotspot } from '@/lib/apis/nasa';
 import { femaApi, FEMAShelter } from '@/lib/apis/fema';
+import { usgsWaterApi, USGSWaterSite } from '@/lib/apis/usgs-water';
 import { useHousehold } from './HouseholdContext';
 
 export interface MapRegion {
@@ -27,6 +28,7 @@ export interface DisasterData {
   earthquakes: USGSEarthquake[];
   wildfires: NASAFireHotspot[];
   shelters: FEMAShelter[];
+  floodGauges: USGSWaterSite[];
 }
 
 interface MapContextType {
@@ -59,8 +61,11 @@ const MapContext = createContext<MapContextType | undefined>(undefined);
 
 const DEFAULT_LAYERS: LayerConfig[] = [
   { id: 'alerts', name: 'Weather Alerts', enabled: true, icon: '⚠️', color: '#FF6600' },
+  { id: 'hurricanes', name: 'Hurricanes', enabled: true, icon: '🌧️', color: '#8B00FF' },
+  { id: 'floods', name: 'Floods', enabled: true, icon: '🌊', color: '#1E40AF' },
   { id: 'earthquakes', name: 'Earthquakes', enabled: true, icon: '🌍', color: '#8B4513' },
   { id: 'wildfires', name: 'Wildfires', enabled: true, icon: '🔥', color: '#FF4500' },
+  { id: 'floodGauges', name: 'Flood Gauges', enabled: true, icon: '💧', color: '#0066CC' },
   { id: 'shelters', name: 'Shelters', enabled: true, icon: '🏠', color: '#4169E1' },
 ];
 
@@ -89,6 +94,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
     earthquakes: [],
     wildfires: [],
     shelters: [],
+    floodGauges: [],
   });
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -195,12 +201,13 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
         earthquakes: [],
         wildfires: [],
         shelters: [],
+        floodGauges: [],
       };
 
       // Fetch data for enabled layers
       const promises = [];
 
-      if (enabledLayers.some(l => l.id === 'alerts')) {
+      if (enabledLayers.some(l => ['alerts', 'hurricanes', 'floods'].includes(l.id))) {
         promises.push(
           nwsApi.getActiveAlerts()
             .then(response => { newData.alerts = response.features; })
@@ -223,6 +230,19 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
               newData.wildfires = fires;
             })
             .catch(error => console.warn('Failed to fetch wildfires:', error))
+        );
+      }
+
+      if (enabledLayers.some(l => l.id === 'floodGauges') && mapRegion) {
+        promises.push(
+          usgsWaterApi.getFloodGauges(
+            mapRegion.latitude - mapRegion.latitudeDelta,
+            mapRegion.latitude + mapRegion.latitudeDelta,
+            mapRegion.longitude - mapRegion.longitudeDelta,
+            mapRegion.longitude + mapRegion.longitudeDelta
+          )
+            .then(gauges => { newData.floodGauges = gauges; })
+            .catch(error => console.warn('Failed to fetch flood gauges:', error))
         );
       }
 

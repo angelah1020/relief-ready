@@ -9,6 +9,8 @@ import { femaApi } from '@/lib/apis/fema';
 import DisasterMarker from './DisasterMarker';
 import AlertPolygon from './AlertPolygon';
 import ShelterMarker from './ShelterMarker';
+import FloodGaugeMarker from './FloodGaugeMarker';
+import MapLegend from './MapLegend';
 
 interface DisasterMapProps {
   style?: any;
@@ -44,8 +46,10 @@ export default function DisasterMap({ style }: DisasterMapProps) {
     
     switch (type) {
       case 'alert':
-        title = feature.properties.headline || feature.properties.event;
-        message = `${feature.properties.description}\n\nExpires: ${new Date(feature.properties.expires).toLocaleString()}`;
+        const category = nwsApi.getEventCategory(feature.properties.event);
+        const icon = nwsApi.getEventIcon(feature.properties.event);
+        title = `${icon} ${feature.properties.event}`;
+        message = `Category: ${category}\n${feature.properties.headline}\n\nArea: ${feature.properties.areaDesc}\nSeverity: ${feature.properties.severity}\nUrgency: ${feature.properties.urgency}\nExpires: ${new Date(feature.properties.expires).toLocaleString()}`;
         break;
         
       case 'earthquake':
@@ -62,6 +66,11 @@ export default function DisasterMap({ style }: DisasterMapProps) {
         title = feature.name;
         message = `${feature.address}, ${feature.city}\nStatus: ${feature.status}\nCapacity: ${feature.currentOccupancy}/${feature.capacity}\nServices: ${femaApi.formatServices(feature.services)}`;
         break;
+        
+      case 'floodGauge':
+        title = feature.name;
+        message = `${feature.siteCode}\nStatus: ${feature.status}\nHeight: ${feature.currentValue.toFixed(1)} ft\nUpdated: ${new Date(feature.lastUpdated).toLocaleString()}`;
+        break;
     }
     
     Alert.alert(title, message, [
@@ -76,38 +85,50 @@ export default function DisasterMap({ style }: DisasterMapProps) {
   };
 
   const renderAlerts = () => {
-    if (!layers.find(l => l.id === 'alerts')?.enabled) return null;
+    const enabledAlertLayers = layers.filter(l => ['alerts', 'hurricanes', 'floods'].includes(l.id) && l.enabled);
+    if (enabledAlertLayers.length === 0) return null;
     
-    return disasterData.alerts.map((alert, index) => {
-      if (alert.geometry?.type === 'Polygon') {
-        return (
-          <AlertPolygon
-            key={`alert-${alert.id}-${index}`}
-            alert={alert}
-            onPress={() => handleMarkerPress(alert, 'alert')}
-          />
-        );
-      } else {
-        // For point-based alerts, show as markers
-        const coords = alert.geometry?.coordinates;
-        if (!coords || coords.length < 2) return null;
+    return disasterData.alerts
+      .filter(alert => {
+        const category = nwsApi.getEventCategory(alert.properties.event);
         
-        return (
-          <DisasterMarker
-            key={`alert-marker-${alert.id}-${index}`}
-            coordinate={{
-              latitude: coords[1],
-              longitude: coords[0],
-            }}
-            title={alert.properties.event}
-            description={alert.properties.areaDesc}
-            color={nwsApi.getSeverityColor(alert.properties.severity)}
-            icon={nwsApi.getHazardIcon(alert.properties.event)}
-            onPress={() => handleMarkerPress(alert, 'alert')}
-          />
-        );
-      }
-    });
+        // Show alert based on which layers are enabled
+        if (category === 'Hurricane' && !layers.find(l => l.id === 'hurricanes')?.enabled) return false;
+        if (category === 'Flood' && !layers.find(l => l.id === 'floods')?.enabled) return false;
+        if (!['Hurricane', 'Flood'].includes(category) && !layers.find(l => l.id === 'alerts')?.enabled) return false;
+        
+        return true;
+      })
+      .map((alert, index) => {
+        if (alert.geometry?.type === 'Polygon') {
+          return (
+            <AlertPolygon
+              key={`alert-${alert.id}-${index}`}
+              alert={alert}
+              onPress={() => handleMarkerPress(alert, 'alert')}
+            />
+          );
+        } else {
+          // For point-based alerts, show as markers
+          const coords = alert.geometry?.coordinates;
+          if (!coords || coords.length < 2) return null;
+          
+          return (
+            <DisasterMarker
+              key={`alert-marker-${alert.id}-${index}`}
+              coordinate={{
+                latitude: coords[1],
+                longitude: coords[0],
+              }}
+              title={alert.properties.event}
+              description={alert.properties.areaDesc}
+              color={nwsApi.getSeverityColor(alert.properties.severity)}
+              icon={nwsApi.getHazardIcon(alert.properties.event)}
+              onPress={() => handleMarkerPress(alert, 'alert')}
+            />
+          );
+        }
+      });
   };
 
   const renderEarthquakes = () => {
@@ -147,6 +168,18 @@ export default function DisasterMap({ style }: DisasterMapProps) {
         size={nasaApi.getFireSize(fire.brightness, fire.frp)}
         icon="🔥"
         onPress={() => handleMarkerPress(fire, 'wildfire')}
+      />
+    ));
+  };
+
+  const renderFloodGauges = () => {
+    if (!layers.find(l => l.id === 'floodGauges')?.enabled) return null;
+    
+    return disasterData.floodGauges.map((gauge, index) => (
+      <FloodGaugeMarker
+        key={`gauge-${gauge.siteCode}-${index}`}
+        gauge={gauge}
+        onPress={() => handleMarkerPress(gauge, 'floodGauge')}
       />
     ));
   };
@@ -221,8 +254,12 @@ export default function DisasterMap({ style }: DisasterMapProps) {
         {renderAlerts()}
         {renderEarthquakes()}
         {renderWildfires()}
+        {renderFloodGauges()}
         {renderShelters()}
       </MapView>
+      
+      {/* Map Legend */}
+      <MapLegend />
     </View>
   );
 }

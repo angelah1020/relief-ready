@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import { useMap } from '@/contexts/MapContext';
 import DisasterMap from '@/components/maps/DisasterMap';
-import LayerToggle from '@/components/maps/LayerToggle';
 import MapControls from '@/components/maps/MapControls';
 
 export default function MapScreen() {
@@ -36,8 +35,8 @@ export default function MapScreen() {
   };
 
   const getDataSummary = () => {
-    const { alerts, earthquakes, wildfires, shelters } = disasterData;
-    const total = alerts.length + earthquakes.length + wildfires.length + shelters.length;
+    const { alerts, earthquakes, wildfires, shelters, floodGauges } = disasterData;
+    const total = alerts.length + earthquakes.length + wildfires.length + shelters.length + floodGauges.length;
     
     if (total === 0) return 'No active alerts in your area';
     
@@ -45,6 +44,7 @@ export default function MapScreen() {
     if (alerts.length > 0) parts.push(`${alerts.length} alert${alerts.length > 1 ? 's' : ''}`);
     if (earthquakes.length > 0) parts.push(`${earthquakes.length} earthquake${earthquakes.length > 1 ? 's' : ''}`);
     if (wildfires.length > 0) parts.push(`${wildfires.length} wildfire${wildfires.length > 1 ? 's' : ''}`);
+    if (floodGauges.length > 0) parts.push(`${floodGauges.length} gauge${floodGauges.length > 1 ? 's' : ''}`);
     if (shelters.length > 0) parts.push(`${shelters.length} shelter${shelters.length > 1 ? 's' : ''}`);
     
     return parts.join(', ');
@@ -95,7 +95,6 @@ export default function MapScreen() {
         
         {/* Overlay Controls */}
         <MapControls />
-        <LayerToggle />
       </View>
     </SafeAreaView>
   );
