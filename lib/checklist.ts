@@ -47,13 +47,22 @@ export async function generateChecklist(
     const infants = members.filter(m => m.age_group === 'infant').length
     const pets = members.filter(m => m.age_group === 'pet').length
 
+    // Get medical needs information
+    const membersWithMedicalNeeds = members.filter(m => m.medical_notes && m.medical_notes.trim() !== '')
+    const medicalNeeds = membersWithMedicalNeeds.map(m => ({
+      age_group: m.age_group,
+      medical_notes: m.medical_notes
+    }))
+
     const householdProfile = {
       adults,
       children,
       seniors,
       infants,
-      pets: { total: pets },
-      duration_days: 3
+      pets: pets > 0 ? { total: pets } : { total: 0 },
+      duration_days: 3,
+      medical_needs: medicalNeeds,
+      total_people: adults + children + seniors + infants
     }
 
     console.log('Household profile:', householdProfile)
@@ -247,13 +256,22 @@ export async function generateAllChecklists(householdId: string) {
     const infants = members.filter(m => m.age_group === 'infant').length
     const pets = members.filter(m => m.age_group === 'pet').length
 
+    // Get medical needs information
+    const membersWithMedicalNeeds = members.filter(m => m.medical_notes && m.medical_notes.trim() !== '')
+    const medicalNeeds = membersWithMedicalNeeds.map(m => ({
+      age_group: m.age_group,
+      medical_notes: m.medical_notes
+    }))
+
     const householdProfile = {
       adults,
       children,
       seniors,
       infants,
-      pets: { total: pets },
-      duration_days: 3
+      pets: pets > 0 ? { total: pets } : { total: 0 },
+      duration_days: 3,
+      medical_needs: medicalNeeds,
+      total_people: adults + children + seniors + infants
     }
 
     console.log('Household profile for batch generation:', householdProfile)

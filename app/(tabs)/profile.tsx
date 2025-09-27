@@ -21,6 +21,7 @@ import { supabase, Tables } from '@/lib/supabase';
 import { formatPhoneNumber } from '@/utils/phoneUtils';
 import { pdfExportService, HouseholdData, InventoryData, ChecklistData, MapData } from '@/services/pdf-export';
 import { captureRef } from 'react-native-view-shot';
+import { generateAllChecklists } from '@/lib/checklist';
 import * as ImagePicker from 'expo-image-picker';
 import { 
   Home,
@@ -1042,7 +1043,19 @@ export default function HouseholdScreen() {
                                       .eq('id', member.id);
                                     
                                     if (error) throw error;
-                                    fetchMembers();
+                                    
+                                    await fetchMembers();
+                                    
+                                    // Regenerate all checklists since household composition changed
+                                    if (currentHousehold) {
+                                      try {
+                                        await generateAllChecklists(currentHousehold.id);
+                                        console.log('Checklists regenerated after member deletion');
+                                      } catch (checklistError) {
+                                        console.error('Failed to regenerate checklists:', checklistError);
+                                        // Don't fail the member deletion if checklist generation fails
+                                      }
+                                    }
                                   } catch (error) {
                                     Alert.alert('Error', 'Failed to remove member');
                                   }
@@ -1467,6 +1480,16 @@ export default function HouseholdScreen() {
                   }
 
                   await fetchMembers();
+                  
+                  // Regenerate all checklists since household composition changed
+                  try {
+                    await generateAllChecklists(currentHousehold.id);
+                    console.log('Checklists regenerated after member update');
+                  } catch (checklistError) {
+                    console.error('Failed to regenerate checklists:', checklistError);
+                    // Don't fail the member update if checklist generation fails
+                  }
+                  
                   setShowMemberModal(false);
                 } catch (error) {
                   console.error('Error saving member:', error);
