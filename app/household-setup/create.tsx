@@ -541,6 +541,7 @@ export default function CreateHouseholdScreen() {
                     value={countrySearch}
                     onChangeText={handleCountrySearchChange}
                     placeholder="Search countries..."
+                    placeholderTextColor="#6b7280"
                     autoFocus={true}
                   />
                   <FlatList
