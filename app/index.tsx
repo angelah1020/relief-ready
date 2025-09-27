@@ -3,12 +3,15 @@ import { useRouter } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
+import SplashScreen from '@/components/SplashScreen';
+import { colors } from '@/lib/theme';
 
 export default function IndexScreen() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { households, loading: householdLoading } = useHousehold();
   const [timeoutReached, setTimeoutReached] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   // Timeout fallback
   useEffect(() => {
@@ -26,16 +29,24 @@ export default function IndexScreen() {
 
     if (!user) {
       router.replace('/auth/login');
+    } else if (households.length === 0) {
+      router.replace('/household-setup');
     } else {
-      // For existing users, go directly to dashboard
-      // They can manage households from the household tab
       router.replace('/(tabs)/dashboard');
     }
   }, [user, households, authLoading, householdLoading]);
 
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
+
   const handleManualLogin = () => {
     router.replace('/auth/login');
   };
+
+  if (showSplash) {
+    return <SplashScreen onAnimationComplete={handleSplashComplete} />;
+  }
 
   return (
     <View style={styles.container}>
@@ -57,27 +68,27 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   text: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: colors.primary,
     marginBottom: 8,
   },
   subtext: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.lightBlue,
     marginBottom: 20,
   },
   button: {
-    backgroundColor: '#DC2626',
+    backgroundColor: colors.buttonPrimary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   buttonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
     fontWeight: '600',
   },

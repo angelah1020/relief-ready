@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { supabase, Tables } from '@/lib/supabase';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import DisasterDetailModal from '@/components/DisasterDetailModal';
+import { colors } from '@/lib/theme';
 import { 
   AlertTriangle,
   Wind,
@@ -38,7 +39,7 @@ const hazardConfig: Record<string, { icon: any; label: string; color: string }> 
   flood: { icon: Droplets, label: 'Flood', color: '#0891B2' },
   earthquake: { icon: Mountain, label: 'Earthquake', color: '#7C2D12' },
   tornado: { icon: Tornado, label: 'Tornado', color: '#6B7280' },
-  heat: { icon: Sun, label: 'Heat Wave', color: '#DC2626' },
+  heat: { icon: Sun, label: 'Heat Wave', color: '#354eab' },
 };
 
 export default function DashboardScreen() {
@@ -155,7 +156,7 @@ export default function DashboardScreen() {
       {/* Seasonal/Alert Card */}
       <View style={styles.alertCard}>
         <View style={styles.alertHeader}>
-          <AlertTriangle size={20} color="#DC2626" />
+          <AlertTriangle size={20} color="#354eab" />
           <Text style={styles.alertTitle}>Seasonal Preparedness</Text>
         </View>
         <Text style={styles.alertDescription}>
@@ -205,7 +206,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   header: {
     paddingHorizontal: 24,
@@ -215,12 +216,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: colors.primary,
     marginBottom: 4,
   },
   householdName: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.lightBlue,
   },
   loadingContainer: {
     flex: 1,
@@ -229,7 +230,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.lightBlue,
   },
   alertCard: {
     backgroundColor: '#FEF2F2',
@@ -248,7 +249,7 @@ const styles = StyleSheet.create({
   alertTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#DC2626',
+    color: colors.error,
     marginLeft: 8,
   },
   alertDescription: {
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: colors.primary,
     marginBottom: 16,
   },
   donutGrid: {
@@ -273,7 +274,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   donutCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.cardBackground,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -308,7 +309,7 @@ const styles = StyleSheet.create({
   donutLabel: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#374151',
+    color: colors.primary,
     textAlign: 'center',
   },
   actionChips: {
@@ -318,7 +319,7 @@ const styles = StyleSheet.create({
   },
   actionChip: {
     backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 16,
@@ -326,7 +327,7 @@ const styles = StyleSheet.create({
   },
   actionChipText: {
     fontSize: 14,
-    color: '#1D4ED8',
+    color: colors.primary,
     fontWeight: '500',
   },
 });

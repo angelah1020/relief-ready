@@ -83,7 +83,11 @@ export default function SignupScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Shield size={48} color="#DC2626" />
+            <Image
+              source={require('@/assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Join Relief Ready</Text>
           </View>
@@ -211,6 +215,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 48,
   },
+  logo: {
+    width: 300,
+    height: 120,
+  },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
@@ -246,7 +254,7 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   button: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#354eab',
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',
@@ -275,7 +283,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14,
-    color: '#DC2626',
+    color: '#354eab',
     fontWeight: '600',
   },
   photoContainer: {

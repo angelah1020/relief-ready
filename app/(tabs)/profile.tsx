@@ -129,7 +129,7 @@ export default function HouseholdScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Current Household</Text>
           <View style={[styles.householdCard, styles.currentHouseholdCard]}>
-            <Home size={20} color="#DC2626" />
+            <Home size={20} color="#354eab" />
             <View style={styles.householdInfo}>
               <Text style={styles.householdName}>{currentHousehold.name}</Text>
               <Text style={styles.householdLocation}>
@@ -155,7 +155,7 @@ export default function HouseholdScreen() {
                 ]}
                 onPress={() => handleSwitchHousehold(household.id)}
               >
-                <Home size={20} color={currentHousehold?.id === household.id ? "#DC2626" : "#6B7280"} />
+                <Home size={20} color={currentHousehold?.id === household.id ? "#354eab" : "#6B7280"} />
                 <View style={styles.householdInfo}>
                   <Text style={[
                     styles.householdName,
@@ -181,17 +181,17 @@ export default function HouseholdScreen() {
         <Text style={styles.sectionTitle}>Household Actions</Text>
         <View style={styles.actionList}>
           <TouchableOpacity style={styles.actionItem} onPress={handleCreateHousehold}>
-            <Plus size={20} color="#DC2626" />
+            <Plus size={20} color="#354eab" />
             <Text style={styles.actionText}>Create New Household</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionItem} onPress={handleJoinHousehold}>
-            <Users size={20} color="#DC2626" />
+            <Users size={20} color="#354eab" />
             <Text style={styles.actionText}>Join Household</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionItem} onPress={handleInviteMembers}>
-            <Share size={20} color="#DC2626" />
+            <Share size={20} color="#354eab" />
             <Text style={styles.actionText}>Invite Members</Text>
           </TouchableOpacity>
         </View>
@@ -218,7 +218,7 @@ export default function HouseholdScreen() {
             style={[styles.menuItem, styles.signOutItem]} 
             onPress={handleSignOut}
           >
-            <LogOut size={20} color="#DC2626" />
+            <LogOut size={20} color="#354eab" />
             <Text style={[styles.menuText, styles.signOutText]}>Sign Out</Text>
           </TouchableOpacity>
         </View>
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   currentHouseholdCard: {
-    borderColor: '#DC2626',
+    borderColor: '#354eab',
     borderWidth: 2,
   },
   householdList: {
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   selectedHouseholdText: {
-    color: '#DC2626',
+    color: '#354eab',
   },
   householdLocation: {
     fontSize: 14,
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   signOutText: {
-    color: '#DC2626',
+    color: '#354eab',
   },
   appInfo: {
     alignItems: 'center',

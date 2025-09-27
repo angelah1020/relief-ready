@@ -229,7 +229,7 @@ export default function InventoryScreen() {
                     style={[styles.actionButton, styles.deleteButton]}
                     onPress={() => handleDelete(item)}
                   >
-                    <Trash2 size={16} color="#DC2626" />
+                    <Trash2 size={16} color="#354eab" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#DC2626',
+    backgroundColor: '#354eab',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   saveButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#354eab',
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',

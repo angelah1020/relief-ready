@@ -93,7 +93,7 @@ export default function ChatbotScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Bot size={24} color="#DC2626" />
+          <Bot size={24} color="#354eab" />
           <Text style={styles.title}>Emergency Assistant</Text>
         </View>
         {currentHousehold && (
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   userBubble: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#354eab',
     borderBottomRightRadius: 4,
   },
   botBubble: {
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   sendButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#354eab',
     width: 44,
     height: 44,
     borderRadius: 22,
