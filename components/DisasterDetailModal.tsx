@@ -8,7 +8,7 @@ import {
   Dimensions,
   Modal,
 } from 'react-native';
-import { ArrowLeft, AlertTriangle, Wind, Flame, Droplets, Mountain, Tornado, Sun } from 'lucide-react-native';
+import { ArrowLeft, AlertTriangle, Wind, Flame, Droplets, Mountain, Tornado, Sun, Plus } from 'lucide-react-native';
 import { colors } from '@/lib/theme';
 
 const { height } = Dimensions.get('window');
@@ -60,6 +60,99 @@ const hazardConfig: Record<string, { icon: any; label: string; color: string; de
   },
 };
 
+
+// Hazard-specific preparation tips
+const preparationTips: Record<string, Array<{ title: string; description: string; priority: 'high' | 'medium' | 'low' }>> = {
+  hurricane: [
+    { title: 'Create an Evacuation Plan', description: 'Know your evacuation zone and routes. Practice with your family and identify multiple ways to leave your area.', priority: 'high' },
+    { title: 'Secure Your Home', description: 'Install storm shutters or board up windows. Bring outdoor furniture inside. Trim trees and shrubs.', priority: 'high' },
+    { title: 'Stock Emergency Supplies', description: 'Have 3-7 days of water (1 gallon per person per day), non-perishable food, medications, and cash.', priority: 'high' },
+    { title: 'Protect Important Documents', description: 'Keep insurance papers, IDs, and medical records in waterproof containers.', priority: 'medium' },
+    { title: 'Have Battery-Powered Radio', description: 'Stay informed with weather updates when power goes out. Include extra batteries.', priority: 'medium' },
+    { title: 'Fill Vehicles with Gas', description: 'Gas stations may not operate after the storm. Fill all vehicles and keep spare fuel for generators.', priority: 'low' }
+  ],
+  wildfire: [
+    { title: 'Create Defensible Space', description: 'Clear vegetation within 30-100 feet of your home. Remove dead plants, leaves, and flammable materials.', priority: 'high' },
+    { title: 'Prepare Go-Bags', description: 'Pack essential items you can grab quickly: medications, documents, clothing, and valuables.', priority: 'high' },
+    { title: 'Have Multiple Evacuation Routes', description: 'Know at least 2 ways out of your neighborhood. Practice driving routes during different times.', priority: 'high' },
+    { title: 'Install Air Filtration', description: 'Use HEPA air purifiers indoors. Seal gaps around doors and windows during smoke events.', priority: 'medium' },
+    { title: 'Keep N95 Masks Ready', description: 'Protect lungs from smoke. Have enough masks for all family members.', priority: 'medium' },
+    { title: 'Use Fire-Resistant Landscaping', description: 'Plant fire-resistant plants and maintain proper spacing between vegetation.', priority: 'low' }
+  ],
+  flood: [
+    { title: 'Know Your Flood Risk', description: 'Understand if you\'re in a flood zone. Even low-risk areas can flood. Have flood insurance.', priority: 'high' },
+    { title: 'Move to Higher Ground', description: 'Identify higher ground routes and safe locations. Never drive or walk through flood water.', priority: 'high' },
+    { title: 'Waterproof Important Items', description: 'Store documents, electronics, and valuables in waterproof containers on upper floors.', priority: 'high' },
+    { title: 'Have Sandbags Ready', description: 'Know how to properly deploy sandbags to redirect water away from your home.', priority: 'medium' },
+    { title: 'Turn Off Utilities Safely', description: 'Know how to shut off gas, electricity, and water to prevent additional hazards.', priority: 'medium' },
+    { title: 'Stay Informed', description: 'Monitor weather alerts and have a battery-powered or hand-crank radio for updates.', priority: 'low' }
+  ],
+  earthquake: [
+    { title: 'Practice Drop, Cover, Hold On', description: 'Drop to hands and knees, take cover under sturdy furniture, hold on and protect your head.', priority: 'high' },
+    { title: 'Secure Heavy Items', description: 'Anchor bookcases, water heaters, and heavy appliances to walls. Secure items that could fall.', priority: 'high' },
+    { title: 'Identify Safe Spots', description: 'Know safe places in each room: under sturdy tables, against interior walls, away from windows.', priority: 'high' },
+    { title: 'Keep Emergency Kit Accessible', description: 'Store supplies in multiple locations. Include sturdy shoes, flashlight, and first aid kit by your bed.', priority: 'medium' },
+    { title: 'Know Utility Shut-offs', description: 'Learn how to turn off gas, water, and electricity. Keep necessary tools nearby.', priority: 'medium' },
+    { title: 'Plan for Aftershocks', description: 'Expect aftershocks after the main quake. Be ready to drop, cover, and hold on again.', priority: 'low' }
+  ],
+  tornado: [
+    { title: 'Identify Safe Room', description: 'Choose a small interior room on the lowest floor, away from windows. Avoid large roof spans.', priority: 'high' },
+    { title: 'Have Weather Radio', description: 'Use NOAA Weather Radio with battery backup and tone alert for tornado warnings.', priority: 'high' },
+    { title: 'Practice Tornado Drills', description: 'Practice getting to your safe room quickly. Teach children the tornado position: crouch low, cover head.', priority: 'high' },
+    { title: 'Keep Safety Supplies in Safe Room', description: 'Store flashlight, battery radio, first aid kit, helmet, and sturdy shoes in your safe area.', priority: 'medium' },
+    { title: 'Know the Signs', description: 'Watch for rotating funnel cloud, loud roar, or large hail. Don\'t wait to take cover.', priority: 'medium' },
+    { title: 'Avoid Mobile Homes', description: 'Mobile homes are unsafe during tornadoes. Know where to go for sturdy shelter nearby.', priority: 'low' }
+  ],
+  heat: [
+    { title: 'Stay Hydrated', description: 'Drink water regularly, even if not thirsty. Avoid alcohol and caffeine which can dehydrate you.', priority: 'high' },
+    { title: 'Find Air Conditioning', description: 'Stay in air-conditioned spaces. Know locations of public cooling centers in your area.', priority: 'high' },
+    { title: 'Avoid Outdoor Activities', description: 'Stay indoors during hottest part of day (10am-6pm). If outside, take frequent breaks in shade.', priority: 'high' },
+    { title: 'Dress Appropriately', description: 'Wear lightweight, light-colored, loose-fitting clothing. Use wide-brimmed hats and sunscreen.', priority: 'medium' },
+    { title: 'Check on Vulnerable People', description: 'Visit elderly neighbors, those with medical conditions, and anyone without air conditioning.', priority: 'medium' },
+    { title: 'Never Leave Anyone in Vehicles', description: 'Cars can reach deadly temperatures quickly. Never leave children, elderly, or pets in parked cars.', priority: 'low' }
+  ]
+};
+
+// Hazard-specific preparedness areas
+const hazardSpecificAreas: Record<string, Array<{ title: string; description: string; icon: string; color: string }>> = {
+  hurricane: [
+    { title: 'Evacuation Planning', description: 'Know your evacuation zone, routes, and shelter locations. Practice your evacuation plan with family.', icon: '🚗', color: '#8B5CF6' },
+    { title: 'Storm Shutters & Securing', description: 'Install storm shutters or board windows. Secure outdoor furniture and trim trees around your home.', icon: '🏠', color: '#6366F1' },
+    { title: 'Emergency Supplies', description: 'Stock 3-7 days of water, non-perishable food, medications, and cash for hurricane season.', icon: '📦', color: '#A855F7' },
+    { title: 'Communication Plan', description: 'Have battery/hand-crank radio for weather updates. Establish out-of-state contact person.', icon: '📻', color: '#7C3AED' }
+  ],
+  wildfire: [
+    { title: 'Defensible Space', description: 'Create and maintain 30-100 feet of defensible space around your home by clearing vegetation.', icon: '🌲', color: '#8B5CF6' },
+    { title: 'Evacuation Readiness', description: 'Keep go-bags packed and vehicles fueled. Know multiple evacuation routes from your area.', icon: '🎒', color: '#6366F1' },
+    { title: 'Air Quality Protection', description: 'Install HEPA air purifiers and have N95 masks ready for smoke protection.', icon: '😷', color: '#A855F7' },
+    { title: 'Fire-Resistant Landscaping', description: 'Use fire-resistant plants and materials. Remove flammable debris from gutters and roof.', icon: '🏡', color: '#7C3AED' }
+  ],
+  flood: [
+    { title: 'Flood Risk Assessment', description: 'Know your flood zone and evacuation routes to higher ground. Consider flood insurance.', icon: '🗺️', color: '#8B5CF6' },
+    { title: 'Waterproofing', description: 'Store important documents and valuables in waterproof containers on upper floors.', icon: '💼', color: '#6366F1' },
+    { title: 'Sandbag Preparation', description: 'Know how to properly deploy sandbags and have materials ready for flood barriers.', icon: '🏗️', color: '#A855F7' },
+    { title: 'Utility Safety', description: 'Know how to safely shut off gas, electricity, and water to prevent additional hazards.', icon: '⚡', color: '#7C3AED' }
+  ],
+  earthquake: [
+    { title: 'Home Securing', description: 'Anchor heavy furniture, appliances, and water heaters to walls. Secure items that could fall.', icon: '🔧', color: '#8B5CF6' },
+    { title: 'Safe Spots Identification', description: 'Identify safe places in each room: under sturdy tables, away from windows and tall furniture.', icon: '🛡️', color: '#6366F1' },
+    { title: 'Emergency Kits', description: 'Keep emergency supplies in multiple locations. Store sturdy shoes and flashlight by bed.', icon: '🔦', color: '#A855F7' },
+    { title: 'Utility Controls', description: 'Learn how to turn off gas, water, and electricity. Keep necessary tools nearby.', icon: '🔧', color: '#7C3AED' }
+  ],
+  tornado: [
+    { title: 'Safe Room Setup', description: 'Identify and prepare a small interior room on lowest floor with no windows as your safe room.', icon: '🏠', color: '#8B5CF6' },
+    { title: 'Weather Monitoring', description: 'Have NOAA Weather Radio with battery backup and tone alert for tornado warnings.', icon: '📡', color: '#6366F1' },
+    { title: 'Emergency Supplies', description: 'Keep flashlight, radio, first aid kit, helmet, and sturdy shoes in your safe room.', icon: '⛑️', color: '#A855F7' },
+    { title: 'Drill Practice', description: 'Practice tornado drills regularly. Teach family the tornado position: crouch low, cover head.', icon: '🏃', color: '#7C3AED' }
+  ],
+  heat: [
+    { title: 'Cooling Strategies', description: 'Identify air-conditioned spaces and public cooling centers. Prepare backup cooling methods.', icon: '❄️', color: '#8B5CF6' },
+    { title: 'Hydration Planning', description: 'Stock extra water and electrolytes. Avoid alcohol and caffeine during extreme heat.', icon: '💧', color: '#6366F1' },
+    { title: 'Activity Modification', description: 'Plan to stay indoors 10am-6pm during heat waves. Modify outdoor activities and work schedules.', icon: '🌞', color: '#A855F7' },
+    { title: 'Vulnerable Population Care', description: 'Check on elderly neighbors and those without A/C. Never leave anyone in parked vehicles.', icon: '👥', color: '#7C3AED' }
+  ]
+};
+
 export default function DisasterDetailModal({ visible, onClose, hazardType, readinessPercentage, onViewChecklist }: DisasterDetailModalProps) {
   const config = hazardConfig[hazardType] || hazardConfig.hurricane;
   const Icon = config.icon;
@@ -72,6 +165,7 @@ export default function DisasterDetailModal({ visible, onClose, hazardType, read
   };
 
   const readiness = getReadinessLevel(readinessPercentage);
+
 
   return (
     <Modal
@@ -123,6 +217,7 @@ export default function DisasterDetailModal({ visible, onClose, hazardType, read
             </View>
           </View>
 
+
           {/* Hazard Description */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>About {config.label}s</Text>
@@ -131,12 +226,69 @@ export default function DisasterDetailModal({ visible, onClose, hazardType, read
             </View>
           </View>
 
+          {/* Preparation Tips - Hazard Specific */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Essential Preparation Tips</Text>
+            <View style={styles.tipsList}>
+              {(preparationTips[hazardType] || preparationTips.hurricane).map((tip, index) => (
+                <View key={index} style={styles.tipItem}>
+                  <View style={[
+                    styles.tipPriorityIndicator, 
+                    { 
+                      backgroundColor: tip.priority === 'high' ? '#8B5CF6' : 
+                                     tip.priority === 'medium' ? '#6366F1' : '#A855F7'
+                    }
+                  ]} />
+                  <View style={styles.tipContent}>
+                    <Text style={styles.tipTitle}>{tip.title}</Text>
+                    <Text style={styles.tipDescription}>{tip.description}</Text>
+                    <View style={[
+                      styles.priorityBadge,
+                      {
+                        backgroundColor: tip.priority === 'high' ? '#EDE9FE' : 
+                                       tip.priority === 'medium' ? '#E0E7FF' : '#F3E8FF'
+                      }
+                    ]}>
+                      <Text style={[
+                        styles.priorityText,
+                        {
+                          color: tip.priority === 'high' ? '#6B46C1' : 
+                               tip.priority === 'medium' ? '#4F46E5' : '#7C3AED'
+                        }
+                      ]}>
+                        {tip.priority.toUpperCase()} PRIORITY
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Key Preparedness Areas */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{config.label} Preparedness Areas</Text>
+            <View style={styles.areasList}>
+              {(hazardSpecificAreas[hazardType] || hazardSpecificAreas.hurricane).map((area, index) => (
+                <View key={index} style={styles.areaItem}>
+                  <View style={[styles.areaIcon, { backgroundColor: area.color + '20' }]}>
+                    <Text style={styles.areaEmoji}>{area.icon}</Text>
+                  </View>
+                  <View style={styles.areaContent}>
+                    <Text style={styles.areaTitle}>{area.title}</Text>
+                    <Text style={styles.areaDescription}>{area.description}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
           {/* Quick Actions */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <View style={styles.actionsList}>
+            <View style={styles.improvedActionsList}>
               <TouchableOpacity 
-                style={styles.actionButton}
+                style={styles.primaryActionButton}
                 onPress={() => {
                   onClose();
                   if (onViewChecklist) {
@@ -144,68 +296,13 @@ export default function DisasterDetailModal({ visible, onClose, hazardType, read
                   }
                 }}
               >
-                <Text style={styles.actionButtonText}>View Checklist</Text>
+                <Text style={styles.primaryActionText}>📋 View Checklist</Text>
+                <Text style={[styles.actionSubtext, { color: '#C7D2FE' }]}>See what supplies you need</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionButtonText}>Update Supplies</Text>
+              <TouchableOpacity style={styles.secondaryActionButton}>
+                <Text style={styles.secondaryActionText}>📦 Update Supplies</Text>
+                <Text style={[styles.actionSubtext, { color: '#6B46C1' }]}>Add items to inventory</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionButtonText}>Review Plan</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Key Preparedness Areas */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Key Preparedness Areas</Text>
-            <View style={styles.areasList}>
-              <View style={styles.areaItem}>
-                <View style={[styles.areaIcon, { backgroundColor: '#EFF6FF' }]}>
-                  <AlertTriangle size={20} color="#1D4ED8" />
-                </View>
-                <View style={styles.areaContent}>
-                  <Text style={styles.areaTitle}>Emergency Plan</Text>
-                  <Text style={styles.areaDescription}>
-                    Create and practice evacuation routes, meeting points, and communication plans
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.areaItem}>
-                <View style={[styles.areaIcon, { backgroundColor: '#F0FDF4' }]}>
-                  <AlertTriangle size={20} color="#059669" />
-                </View>
-                <View style={styles.areaContent}>
-                  <Text style={styles.areaTitle}>Emergency Supplies</Text>
-                  <Text style={styles.areaDescription}>
-                    Stock up on water, food, first aid, and other essential items
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.areaItem}>
-                <View style={[styles.areaIcon, { backgroundColor: colors.buttonSecondary + '22' }]}>
-                  <AlertTriangle size={20} color="#D97706" />
-                </View>
-                <View style={styles.areaContent}>
-                  <Text style={styles.areaTitle}>Home Safety</Text>
-                  <Text style={styles.areaDescription}>
-                    Secure your home and identify safe areas for shelter
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.areaItem}>
-                <View style={[styles.areaIcon, { backgroundColor: colors.buttonSecondary + '22' }]}>
-                  <AlertTriangle size={20} color="#354eab" />
-                </View>
-                <View style={styles.areaContent}>
-                  <Text style={styles.areaTitle}>Communication</Text>
-                  <Text style={styles.areaDescription}>
-                    Set up emergency communication methods and stay informed
-                  </Text>
-                </View>
-              </View>
             </View>
           </View>
 
@@ -354,6 +451,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
+  areaEmoji: {
+    fontSize: 20,
+  },
   areaContent: {
     flex: 1,
   },
@@ -368,20 +468,114 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     lineHeight: 20,
   },
-  actionsList: {
+  improvedActionsList: {
+    gap: 16,
+  },
+  primaryActionButton: {
+    backgroundColor: '#8B5CF6',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#8B5CF6',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  secondaryActionButton: {
+    backgroundColor: '#EDE9FE',
+    borderColor: '#8B5CF6',
+    borderWidth: 2,
+    borderRadius: 16,
+    padding: 20,
+  },
+  primaryActionText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  secondaryActionText: {
+    color: '#8B5CF6',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  actionSubtext: {
+    fontSize: 12,
+    fontWeight: '500',
+    opacity: 0.8,
+  },
+  actionChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 8,
   },
-  actionButton: {
-    backgroundColor: '#354eab',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+  actionChip: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#D1D5DB',
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  actionChipText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  tipsList: {
+    gap: 16,
+  },
+  tipItem: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  tipPriorityIndicator: {
+    width: 4,
+    borderRadius: 2,
+    marginRight: 12,
+  },
+  tipContent: {
+    flex: 1,
+  },
+  tipTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 6,
+  },
+  tipDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  priorityBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
   },
-  actionButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
+  priorityText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

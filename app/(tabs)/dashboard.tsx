@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { supabase, Tables } from '@/lib/supabase';
 import { useHousehold } from '@/contexts/HouseholdContext';
+import { useMap } from '@/contexts/MapContext';
 import DisasterDetailModal from '@/components/DisasterDetailModal';
 import { colors } from '@/lib/theme';
 import { 
@@ -19,7 +20,10 @@ import {
   Droplets,
   Mountain,
   Tornado,
-  Sun
+  Sun,
+  Home,
+  MapPin,
+  Clock
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -45,17 +49,35 @@ const hazardConfig: Record<string, { icon: any; label: string; color: string }> 
 export default function DashboardScreen() {
   const router = useRouter();
   const { currentHousehold } = useHousehold();
+  const { disasterData, loading: mapLoading } = useMap();
   const [donutData, setDonutData] = useState<DonutData[]>([]);
   const [nextBestActions, setNextBestActions] = useState<Tables<'nba_actions'>[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDisaster, setSelectedDisaster] = useState<{ type: string; percentage: number } | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [activeAlert, setActiveAlert] = useState<any>(null);
 
   useEffect(() => {
     if (currentHousehold) {
       fetchDashboardData();
     }
   }, [currentHousehold]);
+
+  useEffect(() => {
+    // Check for active alerts affecting the household area
+    if (disasterData?.alerts && disasterData.alerts.length > 0) {
+      // Get the most severe recent alert
+      const sortedAlerts = [...disasterData.alerts].sort((a, b) => {
+        const severityOrder = { 'Extreme': 4, 'Severe': 3, 'Moderate': 2, 'Minor': 1, 'Unknown': 0 };
+        const aSeverity = severityOrder[a.properties?.severity || 'Unknown'] || 0;
+        const bSeverity = severityOrder[b.properties?.severity || 'Unknown'] || 0;
+        return bSeverity - aSeverity;
+      });
+      setActiveAlert(sortedAlerts[0] || null);
+    } else {
+      setActiveAlert(null);
+    }
+  }, [disasterData]);
 
   const fetchDashboardData = async () => {
     if (!currentHousehold) return;
@@ -107,6 +129,31 @@ export default function DashboardScreen() {
     setSelectedDisaster(null);
   };
 
+  const handleViewOnMap = () => {
+    router.push('/map');
+  };
+
+  const getSeasonalMessage = () => {
+    const month = new Date().getMonth();
+    if (month >= 5 && month <= 10) { // June to November
+      return 'Hurricane season is active—review your emergency plans and supplies.';
+    } else if (month >= 11 || month <= 2) { // December to March  
+      return 'Winter weather can bring power outages—check your heating plans and emergency supplies.';
+    } else if (month >= 3 && month <= 5) { // April to June
+      return 'Spring storms are common—verify your severe weather plans and supplies.';
+    }
+    return 'Stay prepared year-round with updated emergency supplies and plans.';
+  };
+
+  const formatAlertTime = (timeString: string) => {
+    try {
+      const date = new Date(timeString);
+      return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return 'Time unavailable';
+    }
+  };
+
   const handleViewChecklist = (hazardType: string) => {
     setModalVisible(false);
     router.push({
@@ -120,6 +167,12 @@ export default function DashboardScreen() {
   const renderDonut = (data: DonutData) => {
     const { icon: Icon, label, color, readiness_percentage } = data;
     
+    // Calculate progress for visual ring
+    const progress = readiness_percentage / 100;
+    const circumference = 2 * Math.PI * 26; // radius of 26
+    const strokeDasharray = circumference;
+    const strokeDashoffset = circumference * (1 - progress);
+    
     return (
       <TouchableOpacity
         key={data.hazard_type}
@@ -127,9 +180,16 @@ export default function DashboardScreen() {
         onPress={() => handleDisasterPress(data)}
       >
         <View style={styles.donutContainer}>
-          <View style={[styles.donutOuter, { borderColor: color }]}>
+          <View style={styles.donutOuter}>
+            {/* Background circle */}
+            <View style={[styles.donutBackground, { borderColor: color + '20' }]} />
+            {/* Progress indicator */}
+            <View style={[styles.donutProgress, { 
+              borderColor: color,
+              transform: [{ rotate: `${-90 + (progress * 360)}deg` }]
+            }]} />
             <View style={styles.donutInner}>
-              <Icon size={24} color={color} />
+              <Icon size={22} color={color} />
               <Text style={[styles.donutPercentage, { color }]}>
                 {readiness_percentage}%
               </Text>
@@ -137,6 +197,15 @@ export default function DashboardScreen() {
           </View>
         </View>
         <Text style={styles.donutLabel}>{label}</Text>
+        <View style={[styles.readinessIndicator, { 
+          backgroundColor: readiness_percentage >= 80 ? '#8B5CF6' : 
+                           readiness_percentage >= 50 ? '#6366F1' : '#A855F7'
+        }]}>
+          <Text style={styles.readinessText}>
+            {readiness_percentage >= 80 ? 'Ready' : 
+             readiness_percentage >= 50 ? 'Partial' : 'Needs Work'}
+          </Text>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -163,42 +232,85 @@ export default function DashboardScreen() {
         )}
       </View>
 
-      {/* Seasonal/Alert Card */}
-      <View style={styles.alertCard}>
-        <View style={styles.alertHeader}>
-          <AlertTriangle size={20} color="#354eab" />
-          <Text style={styles.alertTitle}>Seasonal Preparedness</Text>
+      {/* Enhanced Welcome Box */}
+      <View style={styles.welcomeBox}>
+        <View style={styles.welcomeTopSection}>
+          <View style={styles.welcomeDecorLeft} />
+          <Text style={styles.welcomeEmoji}>🏠</Text>
+          <View style={styles.welcomeDecorRight} />
         </View>
-        <Text style={styles.alertDescription}>
-          Winter is approaching. Review your emergency heating plans and ensure you have adequate supplies for power outages.
-        </Text>
+        <View style={styles.welcomeTextContainer}>
+          <Text style={styles.welcomeTitle}>Your family's safety starts here!</Text>
+          <Text style={styles.welcomeSubtitle}>Stay prepared, stay protected 🛡️</Text>
+        </View>
+        <View style={styles.welcomeBottomPattern}>
+          <View style={styles.patternDot} />
+          <View style={styles.patternDot} />
+          <View style={styles.patternDot} />
+        </View>
       </View>
 
-      {/* Disaster Readiness Donuts */}
+      {/* Active Alert Box (if there's an active alert) */}
+      {activeAlert ? (
+        <View style={styles.activeAlertBox}>
+          <View style={styles.alertBoxTopSection}>
+            <View style={styles.alertIconContainer}>
+              <AlertTriangle size={24} color="#6366F1" />
+            </View>
+            <View style={styles.alertHeaderContent}>
+              <Text style={styles.activeAlertTitle}>🚨 Active Alert</Text>
+              <Text style={styles.activeAlertEvent}>{activeAlert.properties?.event || 'Weather Alert'}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.alertDetailsContainer}>
+            <View style={styles.alertDetailRow}>
+              <MapPin size={16} color="#8B5CF6" />
+              <Text style={styles.alertDetailText}>
+                {activeAlert.properties?.areaDesc || 'Local area'}
+              </Text>
+            </View>
+            {activeAlert.properties?.ends && (
+              <View style={styles.alertDetailRow}>
+                <Clock size={16} color="#8B5CF6" />
+                <Text style={styles.alertDetailText}>
+                  Ends: {formatAlertTime(activeAlert.properties.ends)}
+                </Text>
+              </View>
+            )}
+          </View>
+          
+          <View style={styles.alertGuidanceContainer}>
+            <Text style={styles.alertGuidance}>
+              {activeAlert.properties?.instruction || 'Stay informed and follow local emergency guidance.'}
+            </Text>
+          </View>
+          
+          <TouchableOpacity style={styles.viewOnMapButton} onPress={handleViewOnMap}>
+            <Text style={styles.viewOnMapText}>🗺️ View on Map</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        /* Seasonal/Alert Card */
+        <View style={styles.seasonalCard}>
+          <View style={styles.alertHeader}>
+            <AlertTriangle size={20} color={colors.primary} />
+            <Text style={styles.alertTitle}>Seasonal Preparedness</Text>
+          </View>
+          <Text style={styles.alertDescription}>
+            {getSeasonalMessage()}
+          </Text>
+        </View>
+      )}
+
+      {/* Disaster Readiness Overview */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Disaster Readiness</Text>
+        <Text style={styles.sectionTitle}>Readiness Overview</Text>
         <View style={styles.donutGrid}>
           {donutData.map(renderDonut)}
         </View>
       </View>
 
-      {/* Next Best Actions */}
-      {nextBestActions.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Next Best Actions</Text>
-          <View style={styles.actionChips}>
-            {nextBestActions.map((action) => (
-              <TouchableOpacity
-                key={action.id}
-                style={styles.actionChip}
-                onPress={() => router.push('/inventory')}
-              >
-                <Text style={styles.actionChipText}>{action.title}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
 
       {/* Disaster Detail Modal */}
       {selectedDisaster && (
@@ -243,8 +355,176 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.lightBlue,
   },
-  alertCard: {
-    // use theme secondary tint instead of hard-coded red background
+  welcomeBox: {
+    backgroundColor: '#FAFAFF',
+    borderRadius: 28,
+    padding: 28,
+    marginHorizontal: 24,
+    marginBottom: 20,
+    shadowColor: '#8B5CF6',
+    shadowOffset: {
+      width: 0,
+      height: 12,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 2,
+    borderColor: '#DDD6FE',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  welcomeTextContainer: {
+    alignItems: 'center',
+  },
+  welcomeTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#4F46E5',
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: 0.8,
+    lineHeight: 28,
+  },
+  welcomeSubtitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6B46C1',
+    textAlign: 'center',
+    opacity: 0.9,
+    letterSpacing: 0.3,
+  },
+  welcomeTopSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  welcomeDecorLeft: {
+    width: 40,
+    height: 2,
+    backgroundColor: '#A78BFA',
+    borderRadius: 1,
+    marginRight: 16,
+  },
+  welcomeDecorRight: {
+    width: 40,
+    height: 2,
+    backgroundColor: '#A78BFA',
+    borderRadius: 1,
+    marginLeft: 16,
+  },
+  welcomeEmoji: {
+    fontSize: 36,
+    textAlign: 'center',
+  },
+  welcomeBottomPattern: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    gap: 8,
+  },
+  patternDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#A78BFA',
+    opacity: 0.7,
+  },
+  activeAlertBox: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#6366F1',
+    borderWidth: 2,
+    borderRadius: 20,
+    padding: 24,
+    marginHorizontal: 24,
+    marginBottom: 24,
+    shadowColor: '#6366F1',
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  alertBoxTopSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  alertIconContainer: {
+    backgroundColor: '#DBEAFE',
+    borderRadius: 16,
+    padding: 12,
+    marginRight: 16,
+  },
+  alertHeaderContent: {
+    flex: 1,
+  },
+  activeAlertTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6366F1',
+    marginBottom: 4,
+  },
+  activeAlertEvent: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4F46E5',
+  },
+  alertDetailsContainer: {
+    backgroundColor: '#F8FAFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  alertDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  alertDetailText: {
+    fontSize: 14,
+    color: colors.primary,
+    marginLeft: 6,
+    flex: 1,
+  },
+  alertGuidanceContainer: {
+    backgroundColor: '#F8FAFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  alertGuidance: {
+    fontSize: 14,
+    color: colors.primary,
+    lineHeight: 22,
+    fontStyle: 'italic',
+  },
+  viewOnMapButton: {
+    backgroundColor: '#8B5CF6',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignSelf: 'center',
+    width: '100%',
+    shadowColor: '#8B5CF6',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  viewOnMapText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.white,
+  },
+  seasonalCard: {
     backgroundColor: colors.buttonSecondary + '22',
     borderColor: colors.buttonSecondary,
     borderWidth: 1,
@@ -288,28 +568,47 @@ const styles = StyleSheet.create({
   },
   donutCard: {
     backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 20,
+    padding: 20,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#8B5CF6',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
   },
   donutContainer: {
     marginBottom: 12,
   },
   donutOuter: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 4,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+  },
+  donutBackground: {
+    position: 'absolute',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 6,
+  },
+  donutProgress: {
+    position: 'absolute',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 6,
+    borderLeftColor: 'transparent',
+    borderBottomColor: 'transparent',
+    borderRightColor: 'transparent',
   },
   donutInner: {
     alignItems: 'center',
@@ -320,9 +619,22 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   donutLabel: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
     color: colors.primary,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  readinessIndicator: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'center',
+  },
+  readinessText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.white,
     textAlign: 'center',
   },
   actionChips: {
