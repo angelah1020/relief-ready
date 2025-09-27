@@ -16,6 +16,9 @@ export default function LayerButton() {
   const { layers, toggleLayer, loading, lastUpdated } = useMap();
   const [isVisible, setIsVisible] = useState(false);
 
+  // Debug: Log layers to console
+  console.log('LayerButton - layers received:', layers);
+
   const formatLastUpdated = () => {
     if (!lastUpdated) return 'Never';
     const now = new Date();
@@ -278,5 +281,12 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     color: '#6B7280',
+  },
+  debugText: {
+    fontSize: 10,
+    color: '#FF0000',
+    textAlign: 'center',
+    marginBottom: 8,
+    fontWeight: 'bold',
   },
 });

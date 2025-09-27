@@ -85,7 +85,7 @@ export default function DisasterMap({ style }: DisasterMapProps) {
   };
 
   const renderAlerts = () => {
-    const enabledAlertLayers = layers.filter(l => ['alerts', 'hurricanes', 'floods'].includes(l.id) && l.enabled);
+    const enabledAlertLayers = layers.filter(l => ['alerts', 'hurricanes'].includes(l.id) && l.enabled);
     if (enabledAlertLayers.length === 0) return null;
     
     return disasterData.alerts
@@ -94,8 +94,7 @@ export default function DisasterMap({ style }: DisasterMapProps) {
         
         // Show alert based on which layers are enabled
         if (category === 'Hurricane' && !layers.find(l => l.id === 'hurricanes')?.enabled) return false;
-        if (category === 'Flood' && !layers.find(l => l.id === 'floods')?.enabled) return false;
-        if (!['Hurricane', 'Flood'].includes(category) && !layers.find(l => l.id === 'alerts')?.enabled) return false;
+        if (!['Hurricane'].includes(category) && !layers.find(l => l.id === 'alerts')?.enabled) return false;
         
         return true;
       })
@@ -173,7 +172,7 @@ export default function DisasterMap({ style }: DisasterMapProps) {
   };
 
   const renderFloodGauges = () => {
-    if (!layers.find(l => l.id === 'floodGauges')?.enabled) return null;
+    if (!layers.find(l => l.id === 'floods')?.enabled) return null;
     
     return disasterData.floodGauges.map((gauge, index) => (
       <FloodGaugeMarker
@@ -186,6 +185,10 @@ export default function DisasterMap({ style }: DisasterMapProps) {
 
   const renderShelters = () => {
     if (!layers.find(l => l.id === 'shelters')?.enabled) return null;
+    
+    console.log('Shelters layer enabled:', layers.find(l => l.id === 'shelters')?.enabled);
+    console.log('Shelter data:', disasterData.shelters);
+    console.log('Number of shelters:', disasterData.shelters.length);
     
     return disasterData.shelters.map((shelter, index) => (
       <ShelterMarker

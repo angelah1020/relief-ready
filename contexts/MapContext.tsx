@@ -62,10 +62,9 @@ const MapContext = createContext<MapContextType | undefined>(undefined);
 const DEFAULT_LAYERS: LayerConfig[] = [
   { id: 'alerts', name: 'Weather Alerts', enabled: true, icon: '⚠️', color: '#FF6600' },
   { id: 'hurricanes', name: 'Hurricanes', enabled: true, icon: '🌧️', color: '#8B00FF' },
-  { id: 'floods', name: 'Floods', enabled: true, icon: '🌊', color: '#1E40AF' },
   { id: 'earthquakes', name: 'Earthquakes', enabled: true, icon: '🌍', color: '#8B4513' },
   { id: 'wildfires', name: 'Wildfires', enabled: true, icon: '🔥', color: '#FF4500' },
-  { id: 'floodGauges', name: 'Flood Gauges', enabled: true, icon: '💧', color: '#0066CC' },
+  { id: 'floods', name: 'Floods', enabled: true, icon: '🌊', color: '#1E40AF' },
   { id: 'shelters', name: 'Shelters', enabled: true, icon: '🏠', color: '#4169E1' },
 ];
 
@@ -107,6 +106,9 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
   const householdLocation = currentHousehold && currentHousehold.latitude && currentHousehold.longitude
     ? { latitude: currentHousehold.latitude, longitude: currentHousehold.longitude }
     : null;
+    
+  console.log('Current household:', currentHousehold);
+  console.log('Household location:', householdLocation);
 
   // Load saved preferences
   useEffect(() => {
@@ -150,7 +152,13 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
         setMapRegion(JSON.parse(savedRegion));
       }
       if (savedLayers) {
-        setLayers(JSON.parse(savedLayers));
+        const savedLayersArray = JSON.parse(savedLayers);
+        // Merge saved layers with DEFAULT_LAYERS to ensure all layers are present
+        const mergedLayers = DEFAULT_LAYERS.map(defaultLayer => {
+          const savedLayer = savedLayersArray.find((saved: LayerConfig) => saved.id === defaultLayer.id);
+          return savedLayer ? { ...defaultLayer, enabled: savedLayer.enabled } : defaultLayer;
+        });
+        setLayers(mergedLayers);
       }
       if (savedLastUpdated) {
         setLastUpdated(new Date(savedLastUpdated));
@@ -196,6 +204,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const enabledLayers = layers.filter(layer => layer.enabled);
+      console.log('Enabled layers:', enabledLayers.map(l => l.id));
       const newData: DisasterData = {
         alerts: [],
         earthquakes: [],
@@ -207,7 +216,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
       // Fetch data for enabled layers
       const promises = [];
 
-      if (enabledLayers.some(l => ['alerts', 'hurricanes', 'floods'].includes(l.id))) {
+      if (enabledLayers.some(l => ['alerts', 'hurricanes'].includes(l.id))) {
         promises.push(
           nwsApi.getActiveAlerts()
             .then(response => { newData.alerts = response.features; })
@@ -233,7 +242,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
         );
       }
 
-      if (enabledLayers.some(l => l.id === 'floodGauges') && mapRegion) {
+      if (enabledLayers.some(l => l.id === 'floods') && mapRegion) {
         promises.push(
           usgsWaterApi.getFloodGauges(
             mapRegion.latitude - mapRegion.latitudeDelta,
@@ -247,17 +256,23 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (enabledLayers.some(l => l.id === 'shelters') && householdLocation) {
+        console.log('Shelters layer enabled, household location:', householdLocation);
         // Only regenerate shelters if location changed
         const locationKey = `${householdLocation.latitude},${householdLocation.longitude}`;
         if (sheltersGeneratedRef.current !== locationKey) {
+          console.log('Generating new shelters for location:', locationKey);
           newData.shelters = femaApi.getMockShelters(
             householdLocation.latitude,
             householdLocation.longitude
           );
+          console.log('Generated shelters:', newData.shelters);
           sheltersGeneratedRef.current = locationKey;
         } else {
+          console.log('Reusing existing shelters:', disasterData.shelters);
           newData.shelters = disasterData.shelters; // Reuse existing shelters
         }
+      } else {
+        console.log('Shelters not enabled or no household location. Enabled:', enabledLayers.some(l => l.id === 'shelters'), 'Location:', householdLocation);
       }
 
       await Promise.all(promises);

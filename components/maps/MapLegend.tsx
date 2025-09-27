@@ -83,23 +83,6 @@ export default function MapLegend() {
         <Text style={styles.sectionTitle}>🌊 Floods</Text>
         <View style={styles.legendRow}>
           <View style={[styles.colorBox, { backgroundColor: '#8B00FF' }]} />
-          <Text style={styles.legendText}>Flash Flood</Text>
-        </View>
-        <View style={styles.legendRow}>
-          <View style={[styles.colorBox, { backgroundColor: '#FF0000' }]} />
-          <Text style={styles.legendText}>Flood Warning</Text>
-        </View>
-        <View style={styles.legendRow}>
-          <View style={[styles.colorBox, { backgroundColor: '#FFA500' }]} />
-          <Text style={styles.legendText}>Flood Watch</Text>
-        </View>
-      </View>
-
-      {/* Flood Gauges (USGS Sites) */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>💧 Flood Gauges</Text>
-        <View style={styles.legendRow}>
-          <View style={[styles.colorBox, { backgroundColor: '#8B00FF' }]} />
           <Text style={styles.legendText}>Major Flood</Text>
         </View>
         <View style={styles.legendRow}>
