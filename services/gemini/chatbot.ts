@@ -1,8 +1,11 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from "@google/genai";
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-const genAI = new GoogleGenerativeAI(process.env.EXPO_PUBLIC_GEMINI_API_KEY || '');
+// Initialize Gemini AI
+const ai = new GoogleGenAI({
+  apiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY
+});
 
 export interface ChatMessage {
   id: string;
@@ -52,12 +55,12 @@ export class EmergencyChatbot {
 
       const prompt = this.buildContextualPrompt(userMessage, context);
       
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text() || '';
+      const result = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: prompt,
+      });
       
-      return text.trim();
+      return result.text || '';
     } catch (error: any) {
       console.error('Error generating AI response:', error);
       return this.getFallbackResponse(userMessage, context);
