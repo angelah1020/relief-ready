@@ -18,6 +18,7 @@ interface DisasterDetailModalProps {
   onClose: () => void;
   hazardType: string;
   readinessPercentage: number;
+  onViewChecklist?: (hazardType: string) => void;
 }
 
 const hazardConfig: Record<string, { icon: any; label: string; color: string; description: string }> = {
@@ -59,7 +60,7 @@ const hazardConfig: Record<string, { icon: any; label: string; color: string; de
   },
 };
 
-export default function DisasterDetailModal({ visible, onClose, hazardType, readinessPercentage }: DisasterDetailModalProps) {
+export default function DisasterDetailModal({ visible, onClose, hazardType, readinessPercentage, onViewChecklist }: DisasterDetailModalProps) {
   const config = hazardConfig[hazardType] || hazardConfig.hurricane;
   const Icon = config.icon;
 
@@ -130,6 +131,30 @@ export default function DisasterDetailModal({ visible, onClose, hazardType, read
             </View>
           </View>
 
+          {/* Quick Actions */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <View style={styles.actionsList}>
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={() => {
+                  onClose();
+                  if (onViewChecklist) {
+                    onViewChecklist(hazardType);
+                  }
+                }}
+              >
+                <Text style={styles.actionButtonText}>View Checklist</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton}>
+                <Text style={styles.actionButtonText}>Update Supplies</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton}>
+                <Text style={styles.actionButtonText}>Review Plan</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* Key Preparedness Areas */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Key Preparedness Areas</Text>
@@ -184,21 +209,6 @@ export default function DisasterDetailModal({ visible, onClose, hazardType, read
             </View>
           </View>
 
-          {/* Quick Actions */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <View style={styles.actionsList}>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionButtonText}>View Checklist</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionButtonText}>Update Supplies</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionButtonText}>Review Plan</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </ScrollView>
       </View>
     </Modal>
