@@ -33,6 +33,9 @@ export const INVENTORY_CATEGORIES = {
   },
   'Pets': {
     description: 'Pet food, water, supplies, carriers'
+  },
+  'Other': {
+    description: 'Items that don\'t fit into other categories'
   }
 } as const;
 
@@ -66,7 +69,7 @@ export class InventoryCategorizer {
       
       // Return a default categorization for any error
       return {
-        category: 'Tools & Safety',
+        category: 'Other',
         confidence: 0.1,
         reasoning: 'AI categorization failed'
       };
@@ -89,6 +92,7 @@ Rules:
 - Food/water items → Water & Food
 - Medical supplies → Medical & First Aid
 - Choose the most appropriate category for emergency use
+- Use "Other" for items that don't clearly fit any specific category
 
 Respond in JSON format:
 {
@@ -119,7 +123,7 @@ Respond in JSON format:
     } catch (error) {
       console.error('Error parsing categorization response:', error);
       return {
-        category: 'Tools & Safety',
+        category: 'Other',
         confidence: 0.1,
         reasoning: 'Failed to parse AI response'
       };
