@@ -591,16 +591,7 @@ export default function CreateHouseholdScreen() {
 
           {/* Members Section */}
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Household Members & Pets</Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => setShowAddMember(true)}
-              >
-                <Plus size={20} color="#354eab" />
-                <Text style={styles.addButtonText}>Add Member</Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.sectionTitle}>Household Members & Pets</Text>
 
             {/* Members List */}
             {members.map((member) => (
@@ -631,6 +622,16 @@ export default function CreateHouseholdScreen() {
                 </TouchableOpacity>
               </View>
             ))}
+
+            {!showAddMember && (
+              <TouchableOpacity
+                style={[styles.addButton, styles.addButtonFullWidth]}
+                onPress={() => setShowAddMember(true)}
+              >
+                <Plus size={20} color="#354eab" />
+                <Text style={styles.addButtonText}>Add Member</Text>
+              </TouchableOpacity>
+            )}
 
             {/* Add Member Form */}
             {showAddMember && (
@@ -938,12 +939,17 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.buttonSecondary + '22',
     borderColor: colors.buttonSecondary,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
+  },
+  addButtonFullWidth: {
+    marginTop: 16,
+    paddingVertical: 12,
   },
   addButtonText: {
     color: '#354eab',

@@ -14,9 +14,11 @@ import MapLegend from './MapLegend';
 
 interface DisasterMapProps {
   style?: any;
+  miniMap?: boolean;
+  zipCode?: string;
 }
 
-export default function DisasterMap({ style }: DisasterMapProps) {
+export default function DisasterMap({ style, miniMap = false, zipCode }: DisasterMapProps) {
   const mapRef = useRef<MapView>(null);
   const [selectedFeature, setSelectedFeature] = useState<any>(null);
   
@@ -244,25 +246,38 @@ export default function DisasterMap({ style }: DisasterMapProps) {
       <MapView
         ref={mapRef}
         style={styles.map}
-        region={mapRegion}
-        onRegionChangeComplete={handleRegionChangeComplete}
+        region={miniMap && householdLocation ? {
+          latitude: householdLocation.latitude,
+          longitude: householdLocation.longitude,
+          latitudeDelta: 0.1,
+          longitudeDelta: 0.1,
+        } : mapRegion}
+        onRegionChangeComplete={miniMap ? undefined : handleRegionChangeComplete}
         showsUserLocation={false} // We'll handle this manually
-        showsMyLocationButton={false}
-        showsCompass={true}
-        showsScale={true}
+        showsMyLocationButton={!miniMap}
+        showsCompass={!miniMap}
+        showsScale={!miniMap}
         mapType="standard"
+        scrollEnabled={!miniMap}
+        zoomEnabled={!miniMap}
+        pitchEnabled={!miniMap}
+        rotateEnabled={!miniMap}
       >
         {renderCurrentLocation()}
         {renderHouseholdLocation()}
-        {renderAlerts()}
-        {renderEarthquakes()}
-        {renderWildfires()}
-        {renderFloodGauges()}
-        {renderShelters()}
+        {!miniMap && (
+          <>
+            {renderAlerts()}
+            {renderEarthquakes()}
+            {renderWildfires()}
+            {renderFloodGauges()}
+            {renderShelters()}
+          </>
+        )}
       </MapView>
       
-      {/* Map Legend */}
-      <MapLegend />
+      {/* Map Legend - only show in full map */}
+      {!miniMap && <MapLegend />}
     </View>
   );
 }
