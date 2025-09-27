@@ -105,7 +105,7 @@ class NWSApi {
       // Return mock data on error
       return {
         type: 'FeatureCollection',
-        features: this.getMockAlerts(),
+        features: [],
         title: 'Mock NWS Alerts',
         updated: new Date().toISOString()
       };

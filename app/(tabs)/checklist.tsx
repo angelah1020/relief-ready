@@ -96,7 +96,14 @@ export default function ChatbotScreen() {
       await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000)); // 2-4 seconds
       
       const context = {
-        household: currentHousehold,
+        household: currentHousehold ? {
+          name: currentHousehold.name,
+          country: currentHousehold.country,
+          postalCode: currentHousehold.zip_code,
+          memberCount: 0, // This would need to be fetched from members
+          petCount: 0, // This would need to be fetched from pets
+          riskProfile: (currentHousehold as any).risk_profile || []
+        } : undefined,
         currentScreen: 'Chatbot'
       };
       const response = await emergencyChatbot.generateResponse(inputText.trim(), context);
