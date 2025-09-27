@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
-import { ArrowLeft, ChevronDown } from 'lucide-react-native';
+import { ArrowLeft, ChevronDown, Plus, X, Users, User, Phone } from 'lucide-react-native';
 
 // Comprehensive list of countries with their ISO codes and names
 const COUNTRIES = [
@@ -270,15 +270,43 @@ const COUNTRIES = [
   { code: 'ZW', name: 'Zimbabwe' },
 ];
 
+interface Member {
+  id: string;
+  firstName: string;
+  lastName: string;
+  ageBand: string;
+  medicalNote?: string;
+  contactInfo?: string;
+  isPet?: boolean;
+}
+
+const AGE_BANDS = [
+  'Infant (0-2)',
+  'Child (3-12)',
+  'Teen (13-17)',
+  'Adult (18-64)',
+  'Senior (65+)',
+];
+
 export default function CreateHouseholdScreen() {
-  const [name, setName] = useState('');
-  const [zipCode, setZipCode] = useState('');
+  const [householdName, setHouseholdName] = useState('My Household');
   const [country, setCountry] = useState('US');
   const [countryName, setCountryName] = useState('United States');
-  const [displayName, setDisplayName] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [members, setMembers] = useState<Member[]>([]);
+  const [inviteEmails, setInviteEmails] = useState<string[]>(['']);
   const [loading, setLoading] = useState(false);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [newMember, setNewMember] = useState({
+    firstName: '',
+    lastName: '',
+    ageBand: 'Adult (18-64)',
+    medicalNote: '',
+    contactInfo: '',
+    isPet: false,
+  });
   
   const router = useRouter();
   const { user } = useAuth();
@@ -302,9 +330,48 @@ export default function CreateHouseholdScreen() {
     setShowCountryDropdown(true);
   };
 
+  const addMember = () => {
+    if (!newMember.firstName || !newMember.lastName) {
+      Alert.alert('Error', 'Please fill in first and last name');
+      return;
+    }
+
+    const member: Member = {
+      id: Date.now().toString(),
+      ...newMember,
+    };
+
+    setMembers(prev => [...prev, member]);
+    setNewMember({
+      firstName: '',
+      lastName: '',
+      ageBand: 'Adult (18-64)',
+      medicalNote: '',
+      contactInfo: '',
+      isPet: false,
+    });
+    setShowAddMember(false);
+  };
+
+  const removeMember = (id: string) => {
+    setMembers(prev => prev.filter(member => member.id !== id));
+  };
+
+  const addInviteEmail = () => {
+    setInviteEmails(prev => [...prev, '']);
+  };
+
+  const updateInviteEmail = (index: number, email: string) => {
+    setInviteEmails(prev => prev.map((email, i) => i === index ? email : email));
+  };
+
+  const removeInviteEmail = (index: number) => {
+    setInviteEmails(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleCreate = async () => {
-    if (!name || !zipCode || !displayName) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    if (!country || !postalCode) {
+      Alert.alert('Error', 'Please fill in country and postal code');
       return;
     }
 
@@ -326,26 +393,14 @@ export default function CreateHouseholdScreen() {
       let accountId;
       
       if (existingAccount) {
-        // Update existing account
-        const { data: updatedAccount, error: updateError } = await supabase
-          .from('accounts')
-          .update({
-            display_name: displayName,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', user.id)
-          .select('id')
-          .single();
-
-        if (updateError) throw updateError;
-        accountId = updatedAccount.id;
+        accountId = existingAccount.id;
       } else {
         // Create new account
         const { data: newAccount, error: insertError } = await supabase
           .from('accounts')
           .insert({
             user_id: user.id,
-            display_name: displayName,
+            display_name: `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim(),
           })
           .select('id')
           .single();
@@ -358,9 +413,9 @@ export default function CreateHouseholdScreen() {
       const { data: household, error: householdError } = await supabase
         .from('households')
         .insert({
-          name,
+          name: householdName,
           country,
-          zip_code: zipCode,
+          zip_code: postalCode,
         })
         .select()
         .single();
@@ -378,14 +433,29 @@ export default function CreateHouseholdScreen() {
 
       if (membershipError) throw membershipError;
 
+      // Add members
+      const memberInserts = members.map(member => ({
+        household_id: household.id,
+        name: `${member.firstName} ${member.lastName}`.trim(),
+        age_group: member.ageBand.split(' ')[0].toLowerCase(),
+        medical_notes: member.medicalNote || null,
+        contact_info: member.contactInfo || null,
+        is_pet: member.isPet || false,
+      }));
+
       // Add yourself as a member
+      memberInserts.push({
+        household_id: household.id,
+        name: `${user.user_metadata?.first_name || 'User'} ${user.user_metadata?.last_name || ''}`.trim(),
+        age_group: 'adult',
+        medical_notes: null,
+        contact_info: null,
+        is_pet: false,
+      });
+
       const { error: memberError } = await supabase
         .from('members')
-        .insert({
-          household_id: household.id,
-          name: displayName,
-          age_group: 'adult',
-        });
+        .insert(memberInserts);
 
       if (memberError) throw memberError;
 
@@ -436,36 +506,23 @@ export default function CreateHouseholdScreen() {
         <View style={styles.spacer} />
       </View>
 
-      <View style={styles.content}>
-        <TouchableOpacity 
-          style={styles.form}
-          activeOpacity={1}
-          onPress={() => setShowCountryDropdown(false)}
-        >
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.form}>
+          {/* Household Name */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Your Display Name *</Text>
+            <Text style={styles.label}>Household Name (Optional)</Text>
             <TextInput
               style={styles.input}
-              value={displayName}
-              onChangeText={setDisplayName}
-              placeholder="How should others see your name?"
+              value={householdName}
+              onChangeText={setHouseholdName}
+              placeholder="My Household"
               autoCapitalize="words"
             />
           </View>
 
+          {/* Country */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Household Name *</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="e.g., Smith Family"
-              autoCapitalize="words"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Country</Text>
+            <Text style={styles.label}>Country *</Text>
             <View style={styles.dropdownContainer}>
               <TouchableOpacity
                 style={styles.dropdownButton}
@@ -506,16 +563,202 @@ export default function CreateHouseholdScreen() {
             </View>
           </View>
 
+          {/* Postal Code */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>ZIP Code *</Text>
+            <Text style={styles.label}>Postal Code / ZIP *</Text>
             <TextInput
               style={styles.input}
-              value={zipCode}
-              onChangeText={setZipCode}
-              placeholder="Enter your ZIP code"
-              keyboardType="numeric"
-              maxLength={5}
+              value={postalCode}
+              onChangeText={setPostalCode}
+              placeholder="Enter your postal code"
+              keyboardType="default"
             />
+          </View>
+
+          {/* Members Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Household Members & Pets</Text>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => setShowAddMember(true)}
+              >
+                <Plus size={20} color="#DC2626" />
+                <Text style={styles.addButtonText}>Add Member</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Members List */}
+            {members.map((member) => (
+              <View key={member.id} style={styles.memberCard}>
+                <View style={styles.memberInfo}>
+                  <Text style={styles.memberName}>
+                    {member.firstName} {member.lastName}
+                  </Text>
+                  <Text style={styles.memberDetails}>
+                    {member.ageBand} {member.isPet ? '• Pet' : ''}
+                  </Text>
+                  {member.medicalNote && (
+                    <Text style={styles.medicalNote}>
+                      Medical: {member.medicalNote}
+                    </Text>
+                  )}
+                  {member.contactInfo && (
+                    <Text style={styles.contactInfo}>
+                      Contact: {member.contactInfo}
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => removeMember(member.id)}
+                >
+                  <X size={20} color="#DC2626" />
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            {/* Add Member Form */}
+            {showAddMember && (
+              <View style={styles.addMemberForm}>
+                <Text style={styles.formTitle}>Add New Member</Text>
+                
+                <View style={styles.nameRow}>
+                  <View style={[styles.inputGroup, styles.nameField]}>
+                    <Text style={styles.label}>First Name *</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={newMember.firstName}
+                      onChangeText={(text) => setNewMember(prev => ({ ...prev, firstName: text }))}
+                      placeholder="First name"
+                      autoCapitalize="words"
+                    />
+                  </View>
+                  <View style={[styles.inputGroup, styles.nameField]}>
+                    <Text style={styles.label}>Last Name *</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={newMember.lastName}
+                      onChangeText={(text) => setNewMember(prev => ({ ...prev, lastName: text }))}
+                      placeholder="Last name"
+                      autoCapitalize="words"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Age Band *</Text>
+                  <View style={styles.ageBandContainer}>
+                    {AGE_BANDS.map((band) => (
+                      <TouchableOpacity
+                        key={band}
+                        style={[
+                          styles.ageBandButton,
+                          newMember.ageBand === band && styles.ageBandButtonSelected
+                        ]}
+                        onPress={() => setNewMember(prev => ({ ...prev, ageBand: band }))}
+                      >
+                        <Text style={[
+                          styles.ageBandText,
+                          newMember.ageBand === band && styles.ageBandTextSelected
+                        ]}>
+                          {band}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Medical Note (Optional)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={newMember.medicalNote}
+                    onChangeText={(text) => setNewMember(prev => ({ ...prev, medicalNote: text }))}
+                    placeholder="e.g., asthma inhaler"
+                    multiline
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Contact Info (Optional)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={newMember.contactInfo}
+                    onChangeText={(text) => setNewMember(prev => ({ ...prev, contactInfo: text }))}
+                    placeholder="e.g., mobile marked ICE"
+                    keyboardType="phone-pad"
+                  />
+                </View>
+
+                <View style={styles.checkboxContainer}>
+                  <TouchableOpacity
+                    style={styles.checkbox}
+                    onPress={() => setNewMember(prev => ({ ...prev, isPet: !prev.isPet }))}
+                  >
+                    <View style={[
+                      styles.checkboxInner,
+                      newMember.isPet && styles.checkboxChecked
+                    ]}>
+                      {newMember.isPet && <Text style={styles.checkmark}>✓</Text>}
+                    </View>
+                    <Text style={styles.checkboxLabel}>This is a pet</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.formActions}>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => setShowAddMember(false)}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={addMember}
+                  >
+                    <Text style={styles.saveButtonText}>Add Member</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Invite Housemates */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Invite Housemates (Optional)</Text>
+            <Text style={styles.sectionDescription}>
+              Send invitations to people who will live in this household
+            </Text>
+            
+            {inviteEmails.map((email, index) => (
+              <View key={index} style={styles.inviteRow}>
+                <TextInput
+                  style={styles.inviteInput}
+                  value={email}
+                  onChangeText={(text) => updateInviteEmail(index, text)}
+                  placeholder="Enter email address"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+                {inviteEmails.length > 1 && (
+                  <TouchableOpacity
+                    style={styles.removeInviteButton}
+                    onPress={() => removeInviteEmail(index)}
+                  >
+                    <X size={20} color="#DC2626" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+            
+            <TouchableOpacity
+              style={styles.addInviteButton}
+              onPress={addInviteEmail}
+            >
+              <Plus size={20} color="#DC2626" />
+              <Text style={styles.addInviteButtonText}>Add Another Email</Text>
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -527,8 +770,8 @@ export default function CreateHouseholdScreen() {
               {loading ? 'Creating...' : 'Create Household'}
             </Text>
           </TouchableOpacity>
-        </TouchableOpacity>
-      </View>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -582,21 +825,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: '#1f2937',
-  },
-  button: {
-    backgroundColor: '#DC2626',
-    borderRadius: 8,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   dropdownContainer: {
     position: 'relative',
@@ -667,5 +895,248 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     fontWeight: '500',
+  },
+  section: {
+    marginTop: 32,
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 16,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  addButtonText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  memberCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  memberInfo: {
+    flex: 1,
+  },
+  memberName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  memberDetails: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 2,
+  },
+  medicalNote: {
+    fontSize: 12,
+    color: '#DC2626',
+    fontStyle: 'italic',
+    marginBottom: 2,
+  },
+  contactInfo: {
+    fontSize: 12,
+    color: '#059669',
+  },
+  removeButton: {
+    padding: 8,
+  },
+  addMemberForm: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  formTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 16,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  nameField: {
+    flex: 1,
+  },
+  ageBandContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  ageBandButton: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#D1D5DB',
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  ageBandButtonSelected: {
+    backgroundColor: '#DC2626',
+    borderColor: '#DC2626',
+  },
+  ageBandText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  ageBandTextSelected: {
+    color: '#ffffff',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  checkbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkboxInner: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    borderRadius: 4,
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#DC2626',
+    borderColor: '#DC2626',
+  },
+  checkmark: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  formActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: '#DC2626',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  inviteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  inviteInput: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#1f2937',
+    marginRight: 12,
+  },
+  removeInviteButton: {
+    padding: 8,
+  },
+  addInviteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  addInviteButtonText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  button: {
+    backgroundColor: '#DC2626',
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

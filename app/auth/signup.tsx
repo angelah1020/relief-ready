@@ -9,22 +9,47 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { Shield } from 'lucide-react-native';
+import { Shield, Camera, User } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const router = useRouter();
 
+  const handleImagePicker = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      Alert.alert('Permission Required', 'Permission to access camera roll is required!');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setProfilePhoto(result.assets[0].uri);
+    }
+  };
+
   const handleSignUp = async () => {
-    if (!email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!email || !password || !confirmPassword || !firstName || !lastName) {
+      Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
@@ -64,8 +89,47 @@ export default function SignupScreen() {
           </View>
 
           <View style={styles.form}>
+            {/* Profile Photo */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>Profile Photo (Optional)</Text>
+              <TouchableOpacity style={styles.photoContainer} onPress={handleImagePicker}>
+                {profilePhoto ? (
+                  <Image source={{ uri: profilePhoto }} style={styles.profilePhoto} />
+                ) : (
+                  <View style={styles.photoPlaceholder}>
+                    <User size={32} color="#6B7280" />
+                    <Camera size={16} color="#6B7280" style={styles.cameraIcon} />
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Name Fields */}
+            <View style={styles.nameRow}>
+              <View style={[styles.inputGroup, styles.nameField]}>
+                <Text style={styles.label}>First Name *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="First name"
+                  autoCapitalize="words"
+                />
+              </View>
+              <View style={[styles.inputGroup, styles.nameField]}>
+                <Text style={styles.label}>Last Name *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Last name"
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email *</Text>
               <TextInput
                 style={styles.input}
                 value={email}
@@ -78,7 +142,7 @@ export default function SignupScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>Password *</Text>
               <TextInput
                 style={styles.input}
                 value={password}
@@ -90,7 +154,7 @@ export default function SignupScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Confirm Password</Text>
+              <Text style={styles.label}>Confirm Password *</Text>
               <TextInput
                 style={styles.input}
                 value={confirmPassword}
@@ -208,5 +272,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#DC2626',
     fontWeight: '600',
+  },
+  photoContainer: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  photoPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+  },
+  profilePhoto: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  cameraIcon: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 4,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  nameField: {
+    flex: 1,
   },
 });
