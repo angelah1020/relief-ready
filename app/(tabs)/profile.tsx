@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
+import DisasterMap from '@/components/maps/DisasterMap';
 import { colors } from '@/lib/theme';
 import { supabase, Tables } from '@/lib/supabase';
 import { 
@@ -33,7 +34,7 @@ import {
 export default function HouseholdScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { currentHousehold, households, selectHousehold } = useHousehold();
+  const { currentHousehold, households, selectHousehold, refreshHouseholds } = useHousehold();
   const [account, setAccount] = useState<Tables<'accounts'> | null>(null);
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState<Tables<'members'>[]>([]);
@@ -44,7 +45,7 @@ export default function HouseholdScreen() {
   const [memberForm, setMemberForm] = useState({
     firstName: '',
     lastName: '',
-    ageGroup: 'adult' as 'infant' | 'child' | 'adult' | 'senior',
+    ageGroup: 'adult' as 'infant' | 'child' | 'teen' | 'adult' | 'senior',
     medicalNotes: '',
     contactInfo: '',
     hasPet: false,
@@ -142,6 +143,76 @@ export default function HouseholdScreen() {
 
   const handleSwitchHousehold = (householdId: string) => {
     selectHousehold(householdId);
+  };
+
+  const handleDeleteHousehold = () => {
+    if (!currentHousehold) return;
+
+    Alert.alert(
+      'Delete Household',
+      'Are you sure you want to delete this household? This action cannot be undone and will remove all members and data associated with this household.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const householdId = currentHousehold.id;
+
+              // Delete all members
+              const { error: membersError } = await supabase
+                .from('members')
+                .delete()
+                .eq('household_id', householdId);
+
+              if (membersError) throw membersError;
+
+              // Delete all pets
+              const { error: petsError } = await supabase
+                .from('pets')
+                .delete()
+                .eq('household_id', householdId);
+
+              if (petsError) throw petsError;
+
+              // Delete all memberships
+              const { error: membershipsError } = await supabase
+                .from('memberships')
+                .delete()
+                .eq('household_id', householdId);
+
+              if (membershipsError) throw membershipsError;
+
+              // Delete the household
+              const { error: householdError } = await supabase
+                .from('households')
+                .delete()
+                .eq('id', householdId);
+
+              if (householdError) throw householdError;
+
+              // Refresh households list
+              await refreshHouseholds();
+
+              // Check remaining households after refresh
+              if (households.length > 1) {
+                const nextHousehold = households.find(h => h.id !== householdId);
+                if (nextHousehold) {
+                  selectHousehold(nextHousehold.id);
+                }
+              } else {
+                // If this was the only household, redirect to create new household
+                router.push('/household-setup/create');
+              }
+            } catch (error) {
+              console.error('Error deleting household:', error);
+              Alert.alert('Error', 'Failed to delete household');
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -280,10 +351,13 @@ export default function HouseholdScreen() {
             </View>
           )}
         </View>
+      </View>
 
-        {/* Household Members */}
-        {currentHousehold && (
-          <View style={[styles.membersList, { marginTop: 12 }]}>
+      {/* Members Section */}
+      {currentHousehold && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Members</Text>
+          <View style={styles.membersList}>
             <View style={styles.membersHeader}>
               <Text style={styles.membersTitle}>Members</Text>
               <TouchableOpacity 
@@ -404,7 +478,39 @@ export default function HouseholdScreen() {
               </View>
             )}
           </View>
-        )}
+        </View>
+      )}
+
+      {/* Location Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Emergency Location</Text>
+        <View style={styles.locationCard}>
+          <View style={styles.locationHeader}>
+            <View>
+              <Text style={styles.locationTitle}>Your Location</Text>
+              <Text style={styles.locationSubtitle}>
+                {currentHousehold?.zip_code}, {currentHousehold?.country}
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity 
+            style={styles.mapPreview}
+            onPress={() => router.push('/(tabs)/map')}
+          >
+            {currentHousehold?.zip_code && currentHousehold.latitude && currentHousehold.longitude ? (
+              <DisasterMap 
+                style={styles.mapPreview}
+                miniMap={true}
+                zipCode={currentHousehold.zip_code}
+              />
+            ) : (
+              <View style={styles.mapPlaceholder}>
+                <Text style={styles.mapText}>No location set</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Household Actions */}
@@ -425,10 +531,40 @@ export default function HouseholdScreen() {
             <Share size={20} color="#354eab" />
             <Text style={styles.actionText}>Invite Members</Text>
           </TouchableOpacity>
+
+          {currentHousehold && (
+            <TouchableOpacity 
+              style={[styles.actionItem, styles.deleteAction]} 
+              onPress={handleDeleteHousehold}
+            >
+              <X size={20} color="#EF4444" />
+              <Text style={[styles.actionText, styles.deleteActionText]}>Delete This Household</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      {/* Emergency Location section temporarily removed */}
+      {/* Menu Options */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Options</Text>
+        <View style={styles.menuList}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => Alert.alert('Settings', 'Settings will be implemented soon.')}
+          >
+            <Settings size={20} color="#6B7280" />
+            <Text style={styles.menuText}>Settings</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.menuItem, styles.signOutItem]} 
+            onPress={handleSignOut}
+          >
+            <LogOut size={20} color="#354eab" />
+            <Text style={[styles.menuText, styles.signOutText]}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* Menu Options */}
       <View style={styles.section}>
@@ -509,7 +645,7 @@ export default function HouseholdScreen() {
             <View style={styles.formGroup}>
               <Text style={styles.formLabel}>Age Band *</Text>
               <View style={styles.formSelect}>
-                {['infant', 'child', 'adult', 'senior'].map((age) => (
+                {['infant', 'child', 'teen', 'adult', 'senior'].map((age) => (
                   <TouchableOpacity
                     key={age}
                     style={[
@@ -522,7 +658,11 @@ export default function HouseholdScreen() {
                       styles.selectOptionText,
                       memberForm.ageGroup === age && styles.selectOptionTextSelected
                     ]}>
-                      {age.charAt(0).toUpperCase() + age.slice(1)}
+                      {age === 'infant' ? 'Infant (0-2)' :
+                       age === 'child' ? 'Child (3-12)' :
+                       age === 'teen' ? 'Teen (13-17)' :
+                       age === 'adult' ? 'Adult (18-64)' :
+                       'Senior (65+)'}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -546,27 +686,38 @@ export default function HouseholdScreen() {
               <TextInput
                 style={styles.formInput}
                 value={memberForm.contactInfo}
-                onChangeText={(text) => setMemberForm(prev => ({ ...prev, contactInfo: text }))}
-                placeholder="Enter contact information"
+                onChangeText={(text) => {
+                  // Only allow numbers and limit to 10 digits
+                  const cleaned = text.replace(/\D/g, '').slice(0, 10);
+                  setMemberForm(prev => ({ ...prev, contactInfo: cleaned }));
+                }}
+                placeholder="Enter phone number (10 digits)"
+                keyboardType="numeric"
+                maxLength={10}
               />
             </View>
 
-            <View style={styles.switchRow}>
+            <View style={styles.formGroup}>
               <Text style={styles.formLabel}>Has Pet?</Text>
-              <TouchableOpacity
-                style={[
-                  styles.selectOption,
-                  memberForm.hasPet && styles.selectOptionSelected
-                ]}
-                onPress={() => setMemberForm(prev => ({ ...prev, hasPet: !prev.hasPet }))}
-              >
-                <Text style={[
-                  styles.selectOptionText,
-                  memberForm.hasPet && styles.selectOptionTextSelected
-                ]}>
-                  {memberForm.hasPet ? 'Yes' : 'No'}
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.formSelect}>
+                {['yes', 'no'].map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    style={[
+                      styles.selectOption,
+                      (option === 'yes' && memberForm.hasPet) || (option === 'no' && !memberForm.hasPet) ? styles.selectOptionSelected : null
+                    ]}
+                    onPress={() => setMemberForm(prev => ({ ...prev, hasPet: option === 'yes' }))}
+                  >
+                    <Text style={[
+                      styles.selectOptionText,
+                      (option === 'yes' && memberForm.hasPet) || (option === 'no' && !memberForm.hasPet) ? styles.selectOptionTextSelected : null
+                    ]}>
+                      {option.charAt(0).toUpperCase() + option.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
             {memberForm.hasPet && (
@@ -648,8 +799,9 @@ export default function HouseholdScreen() {
                     household_id: currentHousehold.id,
                     name: `${memberForm.firstName} ${memberForm.lastName}`.trim(),
                     age_group: memberForm.ageGroup,
-                    special_needs: memberForm.medicalNotes,
-                    contact_info: memberForm.contactInfo,
+                    medical_notes: memberForm.medicalNotes || null,
+                    contact_info: memberForm.contactInfo ? 
+                      Number(memberForm.contactInfo.replace(/\D/g, '')) : null,
                   };
 
                   if (editingMember) {
@@ -659,7 +811,10 @@ export default function HouseholdScreen() {
                       .update(memberData)
                       .eq('id', editingMember.id);
 
-                    if (memberError) throw memberError;
+                    if (memberError) {
+                      console.error('Member update error:', memberError);
+                      throw memberError;
+                    }
                   } else {
                     // Create new member
                     const { error: memberError } = await supabase
@@ -673,17 +828,20 @@ export default function HouseholdScreen() {
                   if (memberForm.hasPet && memberForm.petName && memberForm.petType) {
                     const petData = {
                       household_id: currentHousehold.id,
-                      name: memberForm.petName,
-                      type: memberForm.petType,
+                      name: memberForm.petName.trim(),
+                      type: memberForm.petType.trim(),
                       size: memberForm.petSize,
-                      special_needs: memberForm.petNotes,
+                      medical_notes: memberForm.petNotes || null,
                     };
 
                     const { error: petError } = await supabase
                       .from('pets')
                       .insert(petData);
 
-                    if (petError) throw petError;
+                    if (petError) {
+                      console.error('Pet insert error:', petError);
+                      throw petError;
+                    }
                   }
 
                   await fetchMembers();
@@ -717,6 +875,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     padding: 20,
+  },
+  deleteAction: {
+    borderBottomWidth: 0,
+  },
+  deleteActionText: {
+    color: '#EF4444',
   },
   householdDropdown: {
     position: 'relative',
@@ -1194,29 +1358,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
   },
-  meetingPointContainer: {
-    marginTop: 16,
-    flexDirection: 'row',
+  viewMapButton: {
+    backgroundColor: colors.buttonSecondary,
+    borderRadius: 8,
+    padding: 12,
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    paddingTop: 16,
+    marginTop: 16,
   },
-  meetingPointLabel: {
+  viewMapButtonText: {
+    color: '#ffffff',
     fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginRight: 8,
-  },
-  meetingPointButton: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-    padding: 8,
-    borderRadius: 6,
-  },
-  meetingPointText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontWeight: '600',
   },
   locationEdit: {
     width: 32,
@@ -1228,7 +1380,7 @@ const styles = StyleSheet.create({
   },
   mapPreview: {
     width: '100%',
-    height: 120,
+    height: 200, // Changed from 120 to 200 for better 2:3 ratio
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: '#F3F4F6',
