@@ -12,15 +12,7 @@ export default function RootLayout() {
   const router = useRouter();
   useFrameworkReady();
 
-  useEffect(() => {
-    // Force navigation test after 1 seconds
-    const timer = setTimeout(() => {
-      // console.log('RootLayout - Force navigation to login');
-      router.replace('/auth/login');
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
+  // Removed hardcoded redirect to login - let auth flow handle navigation
 
   return (
     <AuthProvider>

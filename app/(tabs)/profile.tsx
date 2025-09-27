@@ -81,7 +81,7 @@ export default function HouseholdScreen() {
   }, [currentHousehold]);
   
   const fetchMembers = async () => {
-    if (!currentHousehold) return;
+    if (!currentHousehold || !user) return;
     
     setLoadingMembers(true);
     try {
@@ -662,6 +662,9 @@ export default function HouseholdScreen() {
 
               if (membershipError) throw membershipError;
 
+              // Clear current household selection immediately
+              selectHousehold(null);
+              
               // Refresh households to update the UI
               await refreshHouseholds();
               
@@ -723,6 +726,9 @@ export default function HouseholdScreen() {
 
               if (householdError) throw householdError;
 
+              // Clear current household selection immediately
+              selectHousehold(null);
+              
               // Refresh households list
               await refreshHouseholds();
 

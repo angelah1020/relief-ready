@@ -7,7 +7,7 @@ interface HouseholdContextType {
   currentHousehold: Tables<'households'> | null;
   households: Tables<'households'>[];
   loading: boolean;
-  selectHousehold: (householdId: string) => void;
+  selectHousehold: (householdId: string | null) => void;
   refreshHouseholds: () => Promise<void>;
 }
 
@@ -99,7 +99,11 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     fetchHouseholds();
   }, [user]);
 
-  const selectHousehold = (householdId: string) => {
+  const selectHousehold = (householdId: string | null) => {
+    if (householdId === null) {
+      setCurrentHousehold(null);
+      return;
+    }
     const household = households.find(h => h.id === householdId);
     if (household) {
       setCurrentHousehold(household);
