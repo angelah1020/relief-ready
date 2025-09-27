@@ -8,11 +8,13 @@ import {
   StyleSheet,
   Alert,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { supabase, Tables } from '@/lib/supabase';
 import { useHousehold } from '@/contexts/HouseholdContext';
-import { Plus, Edit, Trash2, X } from 'lucide-react-native';
+import { Plus, Edit, Trash2, X, Sparkles } from 'lucide-react-native';
 import { colors } from '@/lib/theme';
+import { inventoryCategorizer, CategoryKey, INVENTORY_CATEGORIES } from '@/services/gemini/categorizer';
 
 interface InventoryItemForm {
   description: string;
@@ -20,6 +22,8 @@ interface InventoryItemForm {
   unit: string;
   location: string;
   expiration_date: string;
+  category?: CategoryKey;
+  ai_confidence?: number;
 }
 
 export default function InventoryScreen() {
@@ -28,6 +32,9 @@ export default function InventoryScreen() {
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<Tables<'inventory_items'> | null>(null);
+  const [isCategorizing, setIsCategorizing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [categorizedItems, setCategorizedItems] = useState<{[key: string]: Tables<'inventory_items'>[]}>({});
   const [formData, setFormData] = useState<InventoryItemForm>({
     description: '',
     quantity: '',
@@ -54,6 +61,7 @@ export default function InventoryScreen() {
 
       if (data) {
         setInventoryItems(data);
+        organizeItemsByCategory(data);
       }
     } catch (error) {
       console.error('Error fetching inventory:', error);
@@ -62,6 +70,57 @@ export default function InventoryScreen() {
     }
   };
 
+  const organizeItemsByCategory = (items: Tables<'inventory_items'>[]) => {
+    const categorized: {[key: string]: Tables<'inventory_items'>[]} = {};
+    
+    // Initialize all categories
+    Object.keys(INVENTORY_CATEGORIES).forEach(category => {
+      categorized[category] = [];
+    });
+    
+    // Add uncategorized section
+    categorized['Uncategorized'] = [];
+
+    // Group items by category
+    items.forEach(item => {
+      const category = (item as any).canonical_key;
+      if (category && categorized[category]) {
+        categorized[category].push(item);
+      } else {
+        categorized['Uncategorized'].push(item);
+      }
+    });
+
+    setCategorizedItems(categorized);
+  };
+
+  const categorizeItem = async (description: string, quantity: string, unit: string) => {
+    if (!description.trim()) return;
+
+    setIsCategorizing(true);
+    try {
+      const result = await inventoryCategorizer.categorizeItem(description, quantity, unit);
+      
+      setFormData(prev => ({
+        ...prev,
+        category: result.category,
+        ai_confidence: result.confidence
+      }));
+
+      Alert.alert(
+        'AI Categorization',
+        `Item categorized as: ${result.category}\nConfidence: ${Math.round(result.confidence * 100)}%\n\nReasoning: ${result.reasoning}`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Error categorizing item:', error);
+      Alert.alert('Error', 'Failed to categorize item. Please try again.');
+    } finally {
+      setIsCategorizing(false);
+    }
+  };
+
+
   const resetForm = () => {
     setFormData({
       description: '',
@@ -69,6 +128,8 @@ export default function InventoryScreen() {
       unit: 'item',
       location: '',
       expiration_date: '',
+      category: undefined,
+      ai_confidence: undefined,
     });
     setEditingItem(null);
   };
@@ -82,6 +143,8 @@ export default function InventoryScreen() {
         unit: item.unit,
         location: item.location || '',
         expiration_date: item.expiration_date || '',
+        category: (item as any).canonical_key as CategoryKey,
+        ai_confidence: (item as any).ai_confidence,
       });
     } else {
       resetForm();
@@ -106,7 +169,27 @@ export default function InventoryScreen() {
       return;
     }
 
+    setIsSaving(true);
     try {
+      // Auto-categorize if not already categorized
+      let category = formData.category;
+      let ai_confidence = formData.ai_confidence;
+      
+      if (!category) {
+        try {
+          const result = await inventoryCategorizer.categorizeItem(
+            formData.description, 
+            formData.quantity, 
+            formData.unit
+          );
+          category = result.category;
+          ai_confidence = result.confidence;
+        } catch (error) {
+          console.error('Auto-categorization failed:', error);
+          // Continue without categorization if AI fails
+        }
+      }
+
       const itemData = {
         household_id: currentHousehold.id,
         description: formData.description,
@@ -114,8 +197,10 @@ export default function InventoryScreen() {
         unit: formData.unit,
         location: formData.location || null,
         expiration_date: formData.expiration_date || null,
-        // These would normally be set by AI classification
-        category: 'General',
+        // AI categorization data
+        canonical_key: category || null,
+        ai_confidence: ai_confidence || null,
+        category: category || 'General',
         item_key: formData.description.toLowerCase().replace(/\s+/g, '_'),
         updated_at: new Date().toISOString(),
       };
@@ -143,6 +228,8 @@ export default function InventoryScreen() {
     } catch (error: any) {
       console.error('Error saving item:', error);
       Alert.alert('Error', error.message || 'Failed to save item');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -208,33 +295,54 @@ export default function InventoryScreen() {
             </Text>
           </View>
         ) : (
-          <View style={styles.itemsList}>
-            {inventoryItems.map((item) => (
-              <View key={item.id} style={styles.inventoryItem}>
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemDescription}>{item.description}</Text>
-                  <Text style={styles.itemDetails}>
-                    {item.quantity} {item.unit}
-                    {item.location && ` • ${item.location}`}
-                    {item.expiration_date && ` • Expires: ${item.expiration_date}`}
+          <View style={styles.categorizedItems}>
+            {Object.entries(categorizedItems).map(([category, items]) => {
+              if (items.length === 0) return null;
+              
+              return (
+                <View key={category} style={styles.categorySection}>
+                  <Text style={[
+                    styles.categoryTitle,
+                    category === 'Uncategorized' && styles.uncategorizedTitle
+                  ]}>
+                    {category}
                   </Text>
+                  <View style={styles.itemsList}>
+                    {items.map((item) => (
+                      <View key={item.id} style={styles.inventoryItem}>
+                        <View style={styles.itemInfo}>
+                          <Text style={styles.itemDescription}>{item.description}</Text>
+                          <Text style={styles.itemDetails}>
+                            {item.quantity} {item.unit}
+                            {item.location && ` • ${item.location}`}
+                            {item.expiration_date && ` • Expires: ${item.expiration_date}`}
+                            {(item as any).ai_confidence && (
+                              <Text style={styles.aiConfidence}>
+                                {' '}• AI: {Math.round((item as any).ai_confidence * 100)}%
+                              </Text>
+                            )}
+                          </Text>
+                        </View>
+                        <View style={styles.itemActions}>
+                          <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={() => openModal(item)}
+                          >
+                            <Edit size={16} color="#6B7280" />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.actionButton, styles.deleteButton]}
+                            onPress={() => handleDelete(item)}
+                          >
+                            <Trash2 size={16} color="#354eab" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-                <View style={styles.itemActions}>
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => openModal(item)}
-                  >
-                    <Edit size={16} color="#6B7280" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.deleteButton]}
-                    onPress={() => handleDelete(item)}
-                  >
-                    <Trash2 size={16} color="#354eab" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -258,13 +366,38 @@ export default function InventoryScreen() {
           <ScrollView style={styles.modalContent}>
             <View style={styles.formGroup}>
               <Text style={styles.label}>Description *</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.description}
-                onChangeText={(text) => setFormData({ ...formData, description: text })}
-                placeholder="What is this item?"
-                autoCapitalize="sentences"
-              />
+              <View style={styles.inputWithButton}>
+                <TextInput
+                  style={[styles.input, styles.inputWithButtonInput]}
+                  value={formData.description}
+                  onChangeText={(text) => setFormData({ ...formData, description: text })}
+                  placeholder="What is this item?"
+                  autoCapitalize="sentences"
+                />
+                <TouchableOpacity
+                  style={[styles.aiButton, isCategorizing && styles.aiButtonDisabled]}
+                  onPress={() => categorizeItem(formData.description, formData.quantity, formData.unit)}
+                  disabled={isCategorizing || !formData.description.trim()}
+                >
+                  {isCategorizing ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Sparkles size={16} color="#ffffff" />
+                  )}
+                </TouchableOpacity>
+              </View>
+              {formData.category && (
+                <View style={styles.categoryInfo}>
+                  <Text style={styles.categoryLabel}>
+                    AI Category: {formData.category}
+                    {formData.ai_confidence && (
+                      <Text style={styles.confidenceText}>
+                        {' '}({Math.round(formData.ai_confidence * 100)}% confidence)
+                      </Text>
+                    )}
+                  </Text>
+                </View>
+              )}
             </View>
 
             <View style={styles.formRow}>
@@ -311,10 +444,18 @@ export default function InventoryScreen() {
               />
             </View>
 
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>
-                {editingItem ? 'Update Item' : 'Add Item'}
-              </Text>
+            <TouchableOpacity 
+              style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} 
+              onPress={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text style={styles.saveButtonText}>
+                  {editingItem ? 'Update Item' : 'Add Item'}
+                </Text>
+              )}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -489,9 +630,71 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 40,
   },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
   saveButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // AI Categorization Styles
+  categorizedItems: {
+    paddingBottom: 20,
+  },
+  categorySection: {
+    marginBottom: 32,
+    paddingHorizontal: 24,
+  },
+  categoryTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 16,
+  },
+  uncategorizedTitle: {
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
+  aiConfidence: {
+    fontSize: 12,
+    color: colors.lightBlue,
+    fontStyle: 'italic',
+  },
+  inputWithButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  inputWithButtonInput: {
+    flex: 1,
+  },
+  aiButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 48,
+  },
+  aiButtonDisabled: {
+    opacity: 0.6,
+  },
+  categoryInfo: {
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: '#F0F9FF',
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+  },
+  categoryLabel: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  confidenceText: {
+    fontSize: 12,
+    color: colors.lightBlue,
   },
 });
