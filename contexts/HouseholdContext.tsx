@@ -80,6 +80,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
     await fetchHouseholds();
   };
 
+
   return (
     <HouseholdContext.Provider
       value={{

@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 
@@ -8,9 +8,21 @@ export default function IndexScreen() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { households, loading: householdLoading } = useHousehold();
+  const [timeoutReached, setTimeoutReached] = useState(false);
+
+  // Timeout fallback
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setTimeoutReached(true);
+    }, 5000); // 5 second timeout
+
+    return () => clearTimeout(timeout);
+  }, []);
 
   useEffect(() => {
-    if (authLoading || householdLoading) return;
+    if ((authLoading || householdLoading) && !timeoutReached) {
+      return;
+    }
 
     if (!user) {
       router.replace('/auth/login');
@@ -21,10 +33,21 @@ export default function IndexScreen() {
     }
   }, [user, households, authLoading, householdLoading]);
 
+  const handleManualLogin = () => {
+    router.replace('/auth/login');
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Relief Ready</Text>
-      <Text style={styles.subtext}>Loading...</Text>
+      <Text style={styles.subtext}>
+        {timeoutReached ? 'Taking too long to load...' : 'Loading...'}
+      </Text>
+      {timeoutReached && (
+        <TouchableOpacity style={styles.button} onPress={handleManualLogin}>
+          <Text style={styles.buttonText}>Go to Login</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -45,5 +68,17 @@ const styles = StyleSheet.create({
   subtext: {
     fontSize: 16,
     color: '#6b7280',
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
