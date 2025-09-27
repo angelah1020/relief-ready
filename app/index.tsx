@@ -26,9 +26,9 @@ export default function IndexScreen() {
 
     if (!user) {
       router.replace('/auth/login');
-    } else if (households.length === 0) {
-      router.replace('/household-setup');
     } else {
+      // For existing users, go directly to dashboard
+      // They can manage households from the household tab
       router.replace('/(tabs)/dashboard');
     }
   }, [user, households, authLoading, householdLoading]);

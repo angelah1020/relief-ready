@@ -1,10 +1,10 @@
 import { Tabs } from 'expo-router';
 import { 
   Home,
-  CheckSquare,
+  MessageCircle,
   Package,
   Map,
-  User
+  Users
 } from 'lucide-react-native';
 
 export default function TabLayout() {
@@ -40,18 +40,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="checklist"
         options={{
-          title: 'Checklist',
+          title: 'Chatbot',
           tabBarIcon: ({ size, color }) => (
-            <CheckSquare size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="inventory"
-        options={{
-          title: 'Inventory',
-          tabBarIcon: ({ size, color }) => (
-            <Package size={size} color={color} />
+            <MessageCircle size={size} color={color} />
           ),
         }}
       />
@@ -65,11 +56,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="inventory"
+        options={{
+          title: 'Inventory',
+          tabBarIcon: ({ size, color }) => (
+            <Package size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: 'Household',
           tabBarIcon: ({ size, color }) => (
-            <User size={size} color={color} />
+            <Users size={size} color={color} />
           ),
         }}
       />

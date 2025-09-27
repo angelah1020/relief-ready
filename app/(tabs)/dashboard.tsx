@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { supabase, Tables } from '@/lib/supabase';
 import { useHousehold } from '@/contexts/HouseholdContext';
+import DisasterDetailModal from '@/components/DisasterDetailModal';
 import { 
   AlertTriangle,
   Wind,
@@ -46,6 +47,8 @@ export default function DashboardScreen() {
   const [donutData, setDonutData] = useState<DonutData[]>([]);
   const [nextBestActions, setNextBestActions] = useState<Tables<'nba_actions'>[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDisaster, setSelectedDisaster] = useState<{ type: string; percentage: number } | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     if (currentHousehold) {
@@ -90,6 +93,19 @@ export default function DashboardScreen() {
     }
   };
 
+  const handleDisasterPress = (data: DonutData) => {
+    setSelectedDisaster({
+      type: data.hazard_type,
+      percentage: data.readiness_percentage,
+    });
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setSelectedDisaster(null);
+  };
+
   const renderDonut = (data: DonutData) => {
     const { icon: Icon, label, color, readiness_percentage } = data;
     
@@ -97,7 +113,7 @@ export default function DashboardScreen() {
       <TouchableOpacity
         key={data.hazard_type}
         style={[styles.donutCard, { width: DONUT_SIZE }]}
-        onPress={() => router.push(`/checklist?hazard=${data.hazard_type}`)}
+        onPress={() => handleDisasterPress(data)}
       >
         <View style={styles.donutContainer}>
           <View style={[styles.donutOuter, { borderColor: color }]}>
@@ -171,6 +187,16 @@ export default function DashboardScreen() {
             ))}
           </View>
         </View>
+      )}
+
+      {/* Disaster Detail Modal */}
+      {selectedDisaster && (
+        <DisasterDetailModal
+          visible={modalVisible}
+          onClose={handleCloseModal}
+          hazardType={selectedDisaster.type}
+          readinessPercentage={selectedDisaster.percentage}
+        />
       )}
     </ScrollView>
   );

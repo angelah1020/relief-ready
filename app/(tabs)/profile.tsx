@@ -12,18 +12,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { supabase, Tables } from '@/lib/supabase';
 import { 
-  User,
   Home,
   Users,
+  Plus,
   Settings,
   LogOut,
-  Share
+  Share,
+  Check
 } from 'lucide-react-native';
 
-export default function ProfileScreen() {
+export default function HouseholdScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { currentHousehold, households } = useHousehold();
+  const { currentHousehold, households, selectHousehold } = useHousehold();
   const [account, setAccount] = useState<Tables<'accounts'> | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -79,11 +80,23 @@ export default function ProfileScreen() {
     Alert.alert('Invite Members', 'Invite feature will be implemented soon.');
   };
 
+  const handleCreateHousehold = () => {
+    router.push('/household-setup/create');
+  };
+
+  const handleJoinHousehold = () => {
+    router.push('/household-setup/join');
+  };
+
+  const handleSwitchHousehold = (householdId: string) => {
+    selectHousehold(householdId);
+  };
+
   if (loading) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.title}>Household</Text>
         </View>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Loading...</Text>
@@ -95,14 +108,14 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.title}>Household</Text>
       </View>
 
       {/* User Info Card */}
       <View style={styles.section}>
         <View style={styles.userCard}>
           <View style={styles.userAvatar}>
-            <User size={32} color="#6B7280" />
+            <Users size={32} color="#6B7280" />
           </View>
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{account?.display_name || 'User'}</Text>
@@ -111,11 +124,11 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Household Info */}
+      {/* Current Household */}
       {currentHousehold && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Current Household</Text>
-          <View style={styles.householdCard}>
+          <View style={[styles.householdCard, styles.currentHouseholdCard]}>
             <Home size={20} color="#DC2626" />
             <View style={styles.householdInfo}>
               <Text style={styles.householdName}>{currentHousehold.name}</Text>
@@ -123,9 +136,66 @@ export default function ProfileScreen() {
                 {currentHousehold.zip_code}, {currentHousehold.country}
               </Text>
             </View>
+            <Check size={20} color="#059669" />
           </View>
         </View>
       )}
+
+      {/* All Households */}
+      {households.length > 1 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Switch Household</Text>
+          <View style={styles.householdList}>
+            {households.map((household) => (
+              <TouchableOpacity
+                key={household.id}
+                style={[
+                  styles.householdItem,
+                  currentHousehold?.id === household.id && styles.selectedHousehold
+                ]}
+                onPress={() => handleSwitchHousehold(household.id)}
+              >
+                <Home size={20} color={currentHousehold?.id === household.id ? "#DC2626" : "#6B7280"} />
+                <View style={styles.householdInfo}>
+                  <Text style={[
+                    styles.householdName,
+                    currentHousehold?.id === household.id && styles.selectedHouseholdText
+                  ]}>
+                    {household.name}
+                  </Text>
+                  <Text style={styles.householdLocation}>
+                    {household.zip_code}, {household.country}
+                  </Text>
+                </View>
+                {currentHousehold?.id === household.id && (
+                  <Check size={20} color="#059669" />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Household Actions */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Household Actions</Text>
+        <View style={styles.actionList}>
+          <TouchableOpacity style={styles.actionItem} onPress={handleCreateHousehold}>
+            <Plus size={20} color="#DC2626" />
+            <Text style={styles.actionText}>Create New Household</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionItem} onPress={handleJoinHousehold}>
+            <Users size={20} color="#DC2626" />
+            <Text style={styles.actionText}>Join Household</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionItem} onPress={handleInviteMembers}>
+            <Share size={20} color="#DC2626" />
+            <Text style={styles.actionText}>Invite Members</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* Menu Options */}
       <View style={styles.section}>
@@ -254,8 +324,36 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
+  currentHouseholdCard: {
+    borderColor: '#DC2626',
+    borderWidth: 2,
+  },
+  householdList: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  householdItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  selectedHousehold: {
+    backgroundColor: '#FEF2F2',
+  },
   householdInfo: {
     marginLeft: 12,
+    flex: 1,
   },
   householdName: {
     fontSize: 16,
@@ -263,9 +361,39 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     marginBottom: 2,
   },
+  selectedHouseholdText: {
+    color: '#DC2626',
+  },
   householdLocation: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  actionList: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  actionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  actionText: {
+    fontSize: 16,
+    color: '#1f2937',
+    marginLeft: 12,
+    fontWeight: '500',
   },
   menuList: {
     backgroundColor: '#ffffff',
