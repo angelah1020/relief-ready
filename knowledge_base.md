@@ -1,8 +1,8 @@
-# ReliefReady Application: AI Knowledge Base
+# Relief Ready Application: AI Knowledge Base
 
-## 🚀 About ReliefReady
+## 🚀 About Relief Ready
 
-ReliefReady is a mobile application designed to help households prepare for natural disasters. Our mission is to provide a simple, intuitive, and personalized way for you to create, track, and manage your emergency preparedness plans and supplies. The app gives you a clear picture of your readiness level, provides actionable steps to improve it, and offers real-time alerts and information when a disaster strikes.
+Relief Ready is a mobile application designed to help households prepare for natural disasters. Our mission is to provide a simple, intuitive, and personalized way for you to create, track, and manage your emergency preparedness plans and supplies. The app gives you a clear picture of your readiness level, provides actionable steps to improve it, and offers real-time alerts and information when a disaster strikes.
 
 The app is built around five core features:
 
@@ -16,7 +16,7 @@ The app is built around five core features:
 
 ### Account vs. Household vs. Member
 
-It's important to understand the three main data structures in ReliefReady:
+It's important to understand the three main data structures in Relief Ready:
 
 **Account**: This is your personal login. It's identified by your email or SSO ID (like Google) and includes your display name and profile photo. An Account is lightweight and not tied to any single household, allowing you to be part of multiple households if needed.
 
@@ -175,7 +175,7 @@ Manage pending invitations you've sent to others to join your household. You can
 
 ## 🔥 General Disaster Preparedness Information
 
-Here is some general information about the disasters ReliefReady helps you prepare for.
+Here is some general information about the disasters Relief Ready helps you prepare for.
 
 ### Hurricane/Storm
 **What It Is**: A large, rotating storm with high-speed winds that forms over warm waters. It can cause storm surge, heavy rain, flooding, and tornadoes.

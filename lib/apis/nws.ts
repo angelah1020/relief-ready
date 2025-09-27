@@ -52,7 +52,7 @@ export interface NWSAlertsResponse {
 
 class NWSApi {
   private baseUrl = 'https://api.weather.gov';
-  private userAgent = 'ReliefReady/1.0 (emergency-prep-app@example.com)';
+  private userAgent = 'Relief Ready/1.0 (emergency-prep-app@example.com)';
 
   private async fetchWithUserAgent(url: string): Promise<Response> {
     const response = await fetch(url, {

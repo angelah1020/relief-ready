@@ -27,7 +27,7 @@ export async function geocodeZipCode(zipCode: string, country: string = 'US'): P
     
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'ReliefReady/1.0 (emergency-prep-app@example.com)',
+        'User-Agent': 'Relief Ready/1.0 (emergency-prep-app@example.com)',
       },
     });
 

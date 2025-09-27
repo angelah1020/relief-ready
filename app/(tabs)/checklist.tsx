@@ -22,7 +22,7 @@ export default function ChatbotScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      text: 'Hello! I\'m ReadyBot, your emergency preparedness assistant. I can help you navigate the ReliefReady app and answer disaster preparedness questions. How can I help you today?',
+      text: 'Hello! I\'m ReadyBot, your emergency preparedness assistant. I can help you navigate the Relief Ready app and answer disaster preparedness questions. How can I help you today?',
       isUser: false,
       timestamp: new Date(),
     }

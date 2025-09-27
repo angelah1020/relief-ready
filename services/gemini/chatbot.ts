@@ -37,11 +37,11 @@ export class EmergencyChatbot {
 
   constructor() {
     // Embedded knowledge base for React Native compatibility
-    this.knowledgeBase = `# ReliefReady Application: AI Knowledge Base
+    this.knowledgeBase = `# Relief Ready Application: AI Knowledge Base
 
-## 🚀 About ReliefReady
+## 🚀 About Relief Ready
 
-ReliefReady is a mobile application designed to help households prepare for natural disasters. Our mission is to provide a simple, intuitive, and personalized way for you to create, track, and manage your emergency preparedness plans and supplies. The app gives you a clear picture of your readiness level, provides actionable steps to improve it, and offers real-time alerts and information when a disaster strikes.
+Relief Ready is a mobile application designed to help households prepare for natural disasters. Our mission is to provide a simple, intuitive, and personalized way for you to create, track, and manage your emergency preparedness plans and supplies. The app gives you a clear picture of your readiness level, provides actionable steps to improve it, and offers real-time alerts and information when a disaster strikes.
 
 The app is built around five core features:
 
@@ -278,7 +278,7 @@ Manage pending invitations you've sent to others to join your household. You can
   private buildContextualPrompt(userMessage: string, context: AppContext): string {
     const contextInfo = this.buildContextString(context);
     
-    return `You are ReadyBot, an intelligent AI assistant for the ReliefReady emergency preparedness app. You have access to comprehensive knowledge about the app and disaster preparedness.
+    return `You are ReadyBot, an intelligent AI assistant for the Relief Ready emergency preparedness app. You have access to comprehensive knowledge about the app and disaster preparedness.
 
 KNOWLEDGE BASE (Your Source of Truth):
 ${this.knowledgeBase}
@@ -290,7 +290,7 @@ USER MESSAGE: "${userMessage}"
 
 INSTRUCTIONS:
 - Be conversational, helpful, and engaging like a knowledgeable friend
-- Use the knowledge base as your primary source for ReliefReady app questions
+- Use the knowledge base as your primary source for Relief Ready app questions
 - For general disaster preparedness questions, draw from your broad knowledge while staying relevant
 - Be flexible and natural in your responses - don't be rigid or overly formal
 - Use emojis occasionally to make responses more engaging
@@ -300,7 +300,7 @@ INSTRUCTIONS:
 - If asked about irrelevant topics, politely redirect to emergency preparedness or app features
 - Always be encouraging and supportive about emergency preparedness
 
-Remember: You're ReadyBot, the friendly AI assistant for ReliefReady. Help users navigate the app and stay prepared for emergencies!`;
+Remember: You're ReadyBot, the friendly AI assistant for Relief Ready. Help users navigate the app and stay prepared for emergencies!`;
 
   }
 
@@ -333,7 +333,7 @@ Remember: You're ReadyBot, the friendly AI assistant for ReliefReady. Help users
     
     // App navigation responses
     if (input.includes('navigate') || input.includes('screen') || input.includes('tab')) {
-      return 'Sure! The ReliefReady app has 5 main screens accessible via bottom tabs: 📊 Dashboard (your disaster readiness overview), 📦 Inventory (manage supplies with AI), 💬 ReadyBot (that\'s me!), 🗺️ Map (live disaster feed), and 👤 Profile (household settings). Each screen is designed to work together for comprehensive emergency preparedness!';
+      return 'Sure! The Relief Ready app has 5 main screens accessible via bottom tabs: 📊 Dashboard (your disaster readiness overview), 📦 Inventory (manage supplies with AI), 💬 ReadyBot (that\'s me!), 🗺️ Map (live disaster feed), and 👤 Profile (household settings). Each screen is designed to work together for comprehensive emergency preparedness!';
     }
     
     if (input.includes('dashboard')) {
@@ -354,7 +354,7 @@ Remember: You're ReadyBot, the friendly AI assistant for ReliefReady. Help users
     
     // Disaster preparedness responses
     if (input.includes('hurricane') || input.includes('storm')) {
-      return 'Hurricanes are powerful and unpredictable! 💨 Beyond basic supplies, consider your home\'s structural vulnerabilities, evacuation timing, and post-storm recovery needs. The ReliefReady app helps track your hurricane readiness with personalized checklists based on your location and household size. Remember, preparation is about more than supplies - it\'s about having a plan!';
+      return 'Hurricanes are powerful and unpredictable! 💨 Beyond basic supplies, consider your home\'s structural vulnerabilities, evacuation timing, and post-storm recovery needs. The Relief Ready app helps track your hurricane readiness with personalized checklists based on your location and household size. Remember, preparation is about more than supplies - it\'s about having a plan!';
     }
     
     if (input.includes('earthquake')) {
@@ -362,35 +362,35 @@ Remember: You're ReadyBot, the friendly AI assistant for ReliefReady. Help users
     }
     
     if (input.includes('fire') || input.includes('wildfire')) {
-      return 'Wildfires are increasingly common and dangerous! 🔥 Create defensible space, have an evacuation plan ready, and keep important documents safe. Air quality can be a major concern even miles away. The ReliefReady app helps you prepare for wildfire season with location-specific guidance and real-time fire monitoring!';
+      return 'Wildfires are increasingly common and dangerous! 🔥 Create defensible space, have an evacuation plan ready, and keep important documents safe. Air quality can be a major concern even miles away. The Relief Ready app helps you prepare for wildfire season with location-specific guidance and real-time fire monitoring!';
     }
     
     if (input.includes('flood')) {
-      return 'Flooding can happen anywhere, not just near water! 🌊 Know your risk, have sandbags ready, and never underestimate moving water. The ReliefReady app provides flood monitoring and helps you prepare with location-specific checklists. Remember: Turn around, don\'t drown!';
+      return 'Flooding can happen anywhere, not just near water! 🌊 Know your risk, have sandbags ready, and never underestimate moving water. The Relief Ready app provides flood monitoring and helps you prepare with location-specific checklists. Remember: Turn around, don\'t drown!';
     }
     
     if (input.includes('tornado')) {
-      return 'Tornadoes can form quickly and cause devastating damage! 🌪️ Identify your safest room (basement or interior room), practice tornado drills, and keep a weather radio handy. The ReliefReady app helps you prepare with tornado-specific checklists and real-time weather monitoring!';
+      return 'Tornadoes can form quickly and cause devastating damage! 🌪️ Identify your safest room (basement or interior room), practice tornado drills, and keep a weather radio handy. The Relief Ready app helps you prepare with tornado-specific checklists and real-time weather monitoring!';
     }
     
     if (input.includes('heat') || input.includes('temperature')) {
-      return 'Heat waves are becoming more frequent and dangerous! ☀️ Stay hydrated, avoid strenuous activities during peak heat, and check on vulnerable neighbors. The ReliefReady app helps you prepare for extreme heat with cooling strategies and heat safety checklists!';
+      return 'Heat waves are becoming more frequent and dangerous! ☀️ Stay hydrated, avoid strenuous activities during peak heat, and check on vulnerable neighbors. The Relief Ready app helps you prepare for extreme heat with cooling strategies and heat safety checklists!';
     }
     
     if (input.includes('checklist') || input.includes('supplies') || input.includes('kit')) {
-      return 'A good emergency kit is your foundation! 🎒 Start with the basics: water (1 gallon per person per day), non-perishable food, first aid supplies, flashlight, radio, and important documents. The ReliefReady app personalizes your checklist based on your household size, location, and specific risks!';
+      return 'A good emergency kit is your foundation! 🎒 Start with the basics: water (1 gallon per person per day), non-perishable food, first aid supplies, flashlight, radio, and important documents. The Relief Ready app personalizes your checklist based on your household size, location, and specific risks!';
     }
     
     if (input.includes('plan') || input.includes('planning')) {
-      return 'Emergency planning is crucial for peace of mind! 📋 Create a family communication plan, identify meeting places, and practice your plan regularly. The ReliefReady app helps you build a comprehensive emergency plan tailored to your household\'s specific needs and risks!';
+      return 'Emergency planning is crucial for peace of mind! 📋 Create a family communication plan, identify meeting places, and practice your plan regularly. The Relief Ready app helps you build a comprehensive emergency plan tailored to your household\'s specific needs and risks!';
     }
     
     if (input.includes('help') || input.includes('what can you do') || input.includes('assist')) {
-      return 'I\'m here to help with all things emergency preparedness! 🚨 I can guide you through the ReliefReady app, answer disaster preparedness questions, help with emergency planning, and provide location-specific advice. What would you like to know more about?';
+      return 'I\'m here to help with all things emergency preparedness! 🚨 I can guide you through the Relief Ready app, answer disaster preparedness questions, help with emergency planning, and provide location-specific advice. What would you like to know more about?';
     }
     
     // Default encouraging response
-    return 'I\'m here to help with emergency preparedness! 🛡️ Whether you need guidance on the ReliefReady app, disaster preparedness advice, or emergency planning tips, I\'m ready to assist. What specific aspect of emergency preparedness would you like to explore?';
+    return 'I\'m here to help with emergency preparedness! 🛡️ Whether you need guidance on the Relief Ready app, disaster preparedness advice, or emergency planning tips, I\'m ready to assist. What specific aspect of emergency preparedness would you like to explore?';
   }
 }
 
