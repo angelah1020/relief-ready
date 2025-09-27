@@ -9,6 +9,7 @@ import {
   Modal,
 } from 'react-native';
 import { ArrowLeft, AlertTriangle, Wind, Flame, Droplets, Mountain, Tornado, Sun } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
 
 const { height } = Dimensions.get('window');
 
@@ -158,7 +159,7 @@ export default function DisasterDetailModal({ visible, onClose, hazardType, read
               </View>
 
               <View style={styles.areaItem}>
-                <View style={[styles.areaIcon, { backgroundColor: '#FEF3C7' }]}>
+                <View style={[styles.areaIcon, { backgroundColor: colors.buttonSecondary + '22' }]}>
                   <AlertTriangle size={20} color="#D97706" />
                 </View>
                 <View style={styles.areaContent}>
@@ -170,7 +171,7 @@ export default function DisasterDetailModal({ visible, onClose, hazardType, read
               </View>
 
               <View style={styles.areaItem}>
-                <View style={[styles.areaIcon, { backgroundColor: '#FEE2E2' }]}>
+                <View style={[styles.areaIcon, { backgroundColor: colors.buttonSecondary + '22' }]}>
                   <AlertTriangle size={20} color="#354eab" />
                 </View>
                 <View style={styles.areaContent}>

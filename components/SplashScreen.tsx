@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions, Image } from 'react-native';
 import { colors } from '@/lib/theme';
+import * as ExpoSplash from 'expo-splash-screen';
 
 const { width, height } = Dimensions.get('window');
 
@@ -9,35 +10,48 @@ interface SplashScreenProps {
 }
 
 export default function SplashScreen({ onAnimationComplete }: SplashScreenProps) {
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
-  const scaleAnim = React.useRef(new Animated.Value(0.8)).current;
+  const fadeAnim = React.useRef(new Animated.Value(1)).current; // controls overall opacity during fade-out
+  const scaleAnim = React.useRef(new Animated.Value(0.6)).current; // start slightly smaller
+  const logoFade = React.useRef(new Animated.Value(1)).current; // keep logo visible until fade-out
 
   React.useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setTimeout(() => {
-        onAnimationComplete?.();
-      }, 1500);
+    let mounted = true;
+
+    // Ensure native splash is hidden so our custom splash is visible
+    ExpoSplash.hideAsync().catch(() => {});
+
+    // Expand the logo slowly, then hold, then fade out the whole view
+    const expand = Animated.timing(scaleAnim, {
+      toValue: 1.08,
+      duration: 1400,
+      useNativeDriver: true,
     });
+
+    const hold = Animated.delay(600);
+
+    const fadeOut = Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 600,
+      useNativeDriver: true,
+    });
+
+    Animated.sequence([expand, hold, fadeOut]).start(() => {
+      if (!mounted) return;
+      onAnimationComplete?.();
+    });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}> 
         <Animated.View
           style={[
             styles.logoContainer,
             {
-              opacity: fadeAnim,
+              opacity: logoFade,
               transform: [{ scale: scaleAnim }],
             },
           ]}
@@ -48,11 +62,7 @@ export default function SplashScreen({ onAnimationComplete }: SplashScreenProps)
             resizeMode="contain"
           />
         </Animated.View>
-      
-      <Animated.View style={[styles.subtitleContainer, { opacity: fadeAnim }]}>
-        <Text style={styles.subtitle}>Emergency Preparedness</Text>
-      </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
 

@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { ArrowLeft, ChevronDown, Plus, X, Users, User, Phone } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
 
 // Comprehensive list of countries with their ISO codes and names
 const COUNTRIES = [
@@ -927,8 +928,8 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
+    backgroundColor: colors.buttonSecondary + '22',
+    borderColor: colors.buttonSecondary,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
@@ -1118,8 +1119,8 @@ const styles = StyleSheet.create({
   addInviteButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
+    backgroundColor: colors.buttonSecondary + '22',
+    borderColor: colors.buttonSecondary,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 16,

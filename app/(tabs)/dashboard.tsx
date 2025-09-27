@@ -233,8 +233,9 @@ const styles = StyleSheet.create({
     color: colors.lightBlue,
   },
   alertCard: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
+    // use theme secondary tint instead of hard-coded red background
+    backgroundColor: colors.buttonSecondary + '22',
+    borderColor: colors.buttonSecondary,
     borderWidth: 1,
     borderRadius: 12,
     padding: 16,
@@ -254,7 +255,8 @@ const styles = StyleSheet.create({
   },
   alertDescription: {
     fontSize: 14,
-    color: '#7F1D1D',
+    // replace dark red copy with theme primary color
+    color: colors.primary,
     lineHeight: 20,
   },
   section: {

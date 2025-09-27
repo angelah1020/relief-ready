@@ -5,38 +5,39 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import SplashScreen from '@/components/SplashScreen';
 import { colors } from '@/lib/theme';
+import * as ExpoSplash from 'expo-splash-screen';
 
 export default function IndexScreen() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { households, loading: householdLoading } = useHousehold();
-  const [timeoutReached, setTimeoutReached] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
-  // Timeout fallback
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setTimeoutReached(true);
-    }, 5000); // 5 second timeout
+    // Do not navigate while the splash animation is still showing.
+    if (showSplash) return;
 
-    return () => clearTimeout(timeout);
-  }, []);
-
-  useEffect(() => {
-    if ((authLoading || householdLoading) && !timeoutReached) {
+    // If there's no signed-in user, go straight to login as soon as splash completes.
+    if (!user) {
+      router.replace('/auth/login');
       return;
     }
 
-    if (!user) {
-      router.replace('/auth/login');
-    } else if (households.length === 0) {
-      router.replace('/household-setup');
-    } else {
-      router.replace('/(tabs)/dashboard');
+    // If user exists, wait for household/auth to finish loading before routing to dashboard.
+    if (authLoading || householdLoading) {
+      return;
     }
-  }, [user, households, authLoading, householdLoading]);
 
-  const handleSplashComplete = () => {
+    router.replace('/(tabs)/dashboard');
+  }, [user, households, authLoading, householdLoading, showSplash]);
+
+  const handleSplashComplete = async () => {
+    // Hide the native splash once our custom animation is done to avoid a flicker
+    try {
+      await ExpoSplash.hideAsync();
+    } catch (err) {
+      // ignore
+    }
     setShowSplash(false);
   };
 
@@ -47,20 +48,9 @@ export default function IndexScreen() {
   if (showSplash) {
     return <SplashScreen onAnimationComplete={handleSplashComplete} />;
   }
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Relief Ready</Text>
-      <Text style={styles.subtext}>
-        {timeoutReached ? 'Taking too long to load...' : 'Loading...'}
-      </Text>
-      {timeoutReached && (
-        <TouchableOpacity style={styles.button} onPress={handleManualLogin}>
-          <Text style={styles.buttonText}>Go to Login</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+  // While the app finishes routing after splash, render nothing (navigation will take user
+  // to login or dashboard). This avoids showing an intermediate 'taking too long' screen.
+  return <></>;
 }
 
 const styles = StyleSheet.create({

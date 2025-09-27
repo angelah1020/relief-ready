@@ -34,7 +34,8 @@ export default function LoginScreen() {
     if (error) {
       Alert.alert('Error', error.message);
     } else {
-      router.replace('/');
+      // Go directly to the dashboard to avoid re-displaying the splash screen
+      router.replace('/(tabs)/dashboard');
     }
     setLoading(false);
   };

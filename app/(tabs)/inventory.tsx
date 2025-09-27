@@ -12,6 +12,7 @@ import {
 import { supabase, Tables } from '@/lib/supabase';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { Plus, Edit, Trash2, X } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
 
 interface InventoryItemForm {
   description: string;
@@ -428,7 +429,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
   deleteButton: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colors.buttonSecondary + '22',
   },
   modalContainer: {
     flex: 1,

@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
+import { colors } from '@/lib/theme';
 import { supabase, Tables } from '@/lib/supabase';
 import { 
   Home,
@@ -151,15 +152,15 @@ export default function HouseholdScreen() {
                 key={household.id}
                 style={[
                   styles.householdItem,
-                  currentHousehold?.id === household.id && styles.selectedHousehold
+                  currentHousehold?.id === household.id && { backgroundColor: colors.buttonSecondary + '22' }
                 ]}
                 onPress={() => handleSwitchHousehold(household.id)}
               >
-                <Home size={20} color={currentHousehold?.id === household.id ? "#354eab" : "#6B7280"} />
+                <Home size={20} color={currentHousehold?.id === household.id ? colors.buttonSecondary : "#6B7280"} />
                 <View style={styles.householdInfo}>
                   <Text style={[
                     styles.householdName,
-                    currentHousehold?.id === household.id && styles.selectedHouseholdText
+                    currentHousehold?.id === household.id && { color: colors.buttonSecondary }
                   ]}>
                     {household.name}
                   </Text>
@@ -168,7 +169,7 @@ export default function HouseholdScreen() {
                   </Text>
                 </View>
                 {currentHousehold?.id === household.id && (
-                  <Check size={20} color="#059669" />
+                  <Check size={20} color={colors.buttonSecondary} />
                 )}
               </TouchableOpacity>
             ))}
@@ -349,7 +350,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F3F4F6',
   },
   selectedHousehold: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: colors.buttonSecondary + '22',
   },
   householdInfo: {
     marginLeft: 12,
