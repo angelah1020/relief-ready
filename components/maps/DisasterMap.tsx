@@ -118,8 +118,8 @@ export default function DisasterMap({ style, miniMap = false, zipCode }: Disaste
             <DisasterMarker
               key={`alert-marker-${alert.id}-${index}`}
               coordinate={{
-                latitude: coords[1],
-                longitude: coords[0],
+                latitude: typeof coords[1] === 'number' ? coords[1] : (Array.isArray(coords[1]) ? (coords[1][0] as unknown as number) : 0),
+                longitude: typeof coords[0] === 'number' ? coords[0] : (Array.isArray(coords[0]) ? (coords[0][0] as unknown as number) : 0),
               }}
               title={alert.properties.event}
               description={alert.properties.areaDesc}

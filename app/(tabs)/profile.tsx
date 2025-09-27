@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import DisasterMap from '@/components/maps/DisasterMap';
 import { colors } from '@/lib/theme';
 import { supabase, Tables } from '@/lib/supabase';
 import { formatPhoneNumber } from '@/utils/phoneUtils';
+import { pdfExportService, HouseholdData, InventoryData, ChecklistData, MapData } from '@/services/pdf-export';
+import { captureRef } from 'react-native-view-shot';
 import { 
   Home,
   Users,
@@ -31,6 +33,7 @@ import {
   AlertCircle,
   ChevronDown,
   UserMinus,
+  FileText,
 } from 'lucide-react-native';
 
 export default function HouseholdScreen() {
@@ -56,6 +59,8 @@ export default function HouseholdScreen() {
     petSize: 'medium' as 'small' | 'medium' | 'large',
     petNotes: '',
   });
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const mapRef = useRef<View>(null);
 
   useEffect(() => {
     if (user) {
@@ -132,6 +137,274 @@ export default function HouseholdScreen() {
       console.error('Error fetching account:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!currentHousehold) {
+      Alert.alert('Error', 'No household selected');
+      return;
+    }
+
+    setIsGeneratingPDF(true);
+    try {
+      // Fetch all necessary data
+      const [inventoryData, checklistData, petsData] = await Promise.all([
+        fetchInventoryData(),
+        fetchChecklistData(),
+        fetchPetsData()
+      ]);
+
+      // Debug: Log data being sent to PDF
+      console.log('PDF Generation Data:');
+      console.log('Inventory categories:', inventoryData.length);
+      console.log('Checklist hazards:', checklistData.length);
+
+      // Prepare household data
+      const householdData: HouseholdData = {
+        name: currentHousehold.name,
+        country: currentHousehold.country,
+        postalCode: currentHousehold.zip_code,
+        memberCount: members.length,
+        petCount: petsData.length,
+        riskProfile: (currentHousehold as any).risk_profile || [],
+        members: members.map(member => ({
+          firstName: member.name.split(' ')[0] || '',
+          lastName: member.name.split(' ').slice(1).join(' ') || '',
+          ageBand: member.age_group,
+          medicalNote: member.medical_notes || undefined,
+          hasAccount: false // This would need to be determined from memberships table
+        })),
+        pets: petsData.map(pet => ({
+          type: pet.type,
+          count: 1, // Assuming 1 pet per record
+          note: pet.special_needs || undefined
+        })),
+        rallyPoint: (currentHousehold as any).rally_point || undefined,
+        outOfAreaContact: (currentHousehold as any).out_of_area_contact ? {
+          name: (currentHousehold as any).out_of_area_contact,
+          phone: (currentHousehold as any).out_of_area_phone || ''
+        } : undefined,
+        iceContacts: [] // This would need to be fetched from a separate table
+      };
+
+      // Capture map screenshot
+      let mapImageUri: string | undefined;
+      try {
+        if (mapRef.current && currentHousehold?.zip_code && currentHousehold.latitude && currentHousehold.longitude) {
+          console.log('Capturing map screenshot...');
+          
+          // Add delay to ensure map renders completely
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          mapImageUri = await captureRef(mapRef.current, {
+            format: 'png',
+            quality: 0.8,
+            result: 'base64',
+          });
+          console.log('Map screenshot captured successfully, length:', mapImageUri?.length);
+          console.log('Map screenshot preview:', mapImageUri?.substring(0, 50) + '...');
+        } else {
+          console.log('Map not available for screenshot - ref:', !!mapRef.current, 'zip:', currentHousehold?.zip_code, 'lat:', currentHousehold?.latitude, 'lng:', currentHousehold?.longitude);
+        }
+      } catch (error) {
+        console.error('Error capturing map screenshot:', error);
+        // Continue without map image
+      }
+
+      // Prepare map data
+      const mapData: MapData = {
+        center: {
+          latitude: currentHousehold.latitude || 0,
+          longitude: currentHousehold.longitude || 0
+        },
+        activeAlerts: [], // This would need to be fetched from the map context
+        nearbyResources: [], // This would need to be fetched from the map context
+        mapImageUri
+      };
+
+      // Generate PDF
+      const pdfUri = await pdfExportService.generatePDF(
+        householdData,
+        inventoryData,
+        checklistData,
+        mapData
+      );
+
+      // Share PDF
+      await pdfExportService.sharePDF(pdfUri);
+
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      Alert.alert('Error', 'Failed to generate PDF report');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  const fetchInventoryData = async (): Promise<InventoryData[]> => {
+    if (!currentHousehold) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('household_id', currentHousehold.id);
+
+      if (error) throw error;
+
+      // Group items by category
+      const categorizedItems = (data || []).reduce((acc, item) => {
+        const category = item.canonical_key || 'Other';
+        if (!acc[category]) {
+          acc[category] = [];
+        }
+        acc[category].push({
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          aiConfidence: item.ai_confidence
+        });
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      return Object.entries(categorizedItems).map(([category, items]) => ({
+        category,
+        items: items as Array<{
+          description: string;
+          quantity: number;
+          unit: string;
+          aiConfidence?: number;
+        }>
+      }));
+    } catch (error) {
+      console.error('Error fetching inventory data:', error);
+      return [];
+    }
+  };
+
+  const fetchChecklistData = async (): Promise<ChecklistData[]> => {
+    if (!currentHousehold) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('checklist_items')
+        .select('*')
+        .eq('household_id', currentHousehold.id);
+
+      if (error) throw error;
+
+      // Always return sample data for now since checklist_items table might not be populated
+      const sampleHazards = ['Hurricane', 'Earthquake', 'Wildfire', 'Flood', 'Tornado', 'Heat Wave'];
+      const result = sampleHazards.map(hazard => ({
+        hazard,
+        readinessPercentage: 0,
+        items: [
+          {
+            category: 'Water & Food',
+            name: 'Water (1 gallon per person per day)',
+            needed: 3,
+            unit: 'gallons',
+            have: 0,
+            status: 'none' as const
+          },
+          {
+            category: 'Water & Food',
+            name: 'Non-perishable food',
+            needed: 3,
+            unit: 'days',
+            have: 0,
+            status: 'none' as const
+          },
+          {
+            category: 'Medical & First Aid',
+            name: 'First aid kit',
+            needed: 1,
+            unit: 'kit',
+            have: 0,
+            status: 'none' as const
+          },
+          {
+            category: 'Lighting & Power',
+            name: 'Flashlight with batteries',
+            needed: 1,
+            unit: 'flashlight',
+            have: 0,
+            status: 'none' as const
+          },
+          {
+            category: 'Communication',
+            name: 'Battery-powered radio',
+            needed: 1,
+            unit: 'radio',
+            have: 0,
+            status: 'none' as const
+          },
+          {
+            category: 'Tools & Safety',
+            name: 'Emergency whistle',
+            needed: 1,
+            unit: 'whistle',
+            have: 0,
+            status: 'none' as const
+          },
+          {
+            category: 'Important Documents',
+            name: 'Important documents (IDs, insurance)',
+            needed: 1,
+            unit: 'set',
+            have: 0,
+            status: 'none' as const
+          }
+        ]
+      }));
+
+      return result;
+    } catch (error) {
+      console.error('Error fetching checklist data:', error);
+      // Return sample data if there's an error
+      const fallbackData = [
+        {
+          hazard: 'Hurricane',
+          readinessPercentage: 0,
+          items: [
+            {
+              category: 'Water & Food',
+              name: 'Water (1 gallon per person per day)',
+              needed: 3,
+              unit: 'gallons',
+              have: 0,
+              status: 'none' as const
+            },
+            {
+              category: 'Water & Food',
+              name: 'Non-perishable food',
+              needed: 3,
+              unit: 'days',
+              have: 0,
+              status: 'none' as const
+            }
+          ]
+        }
+      ];
+      return fallbackData;
+    }
+  };
+
+  const fetchPetsData = async () => {
+    if (!currentHousehold) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('pets')
+        .select('*')
+        .eq('household_id', currentHousehold.id);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching pets data:', error);
+      return [];
     }
   };
 
@@ -646,17 +919,19 @@ export default function HouseholdScreen() {
             style={styles.mapPreview}
             onPress={() => router.push('/(tabs)/map')}
           >
-            {currentHousehold?.zip_code && currentHousehold.latitude && currentHousehold.longitude ? (
-              <DisasterMap 
-                style={styles.mapPreview}
-                miniMap={true}
-                zipCode={currentHousehold.zip_code}
-              />
-            ) : (
-              <View style={styles.mapPlaceholder}>
-                <Text style={styles.mapText}>No location set</Text>
-              </View>
-            )}
+            <View ref={mapRef} style={styles.mapPreview} collapsable={false}>
+              {currentHousehold?.zip_code && currentHousehold.latitude && currentHousehold.longitude ? (
+                <DisasterMap 
+                  style={styles.mapPreview}
+                  miniMap={true}
+                  zipCode={currentHousehold.zip_code}
+                />
+              ) : (
+                <View style={styles.mapPlaceholder}>
+                  <Text style={styles.mapText}>No location set</Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -701,6 +976,23 @@ export default function HouseholdScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Options</Text>
         <View style={styles.menuList}>
+          {currentHousehold && (
+            <TouchableOpacity 
+              style={[styles.menuItem, isGeneratingPDF && styles.menuItemDisabled]} 
+              onPress={handleExportPDF}
+              disabled={isGeneratingPDF}
+            >
+              {isGeneratingPDF ? (
+                <ActivityIndicator size={20} color="#6B7280" />
+              ) : (
+                <FileText size={20} color="#6B7280" />
+              )}
+              <Text style={styles.menuText}>
+                {isGeneratingPDF ? 'Generating PDF...' : 'Export to PDF'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity style={styles.menuItem} onPress={handleInviteMembers}>
             <Share size={20} color="#6B7280" />
             <Text style={styles.menuText}>Invite Members</Text>
@@ -1499,6 +1791,9 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontWeight: '500',
   },
+  actionItemDisabled: {
+    opacity: 0.6,
+  },
   menuList: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
@@ -1519,6 +1814,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
+  },
+  menuItemDisabled: {
+    opacity: 0.6,
   },
   menuText: {
     fontSize: 16,

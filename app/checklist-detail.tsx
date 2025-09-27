@@ -24,7 +24,7 @@ import {
   Zap, 
   Radio, 
   Home, 
-  Shower, 
+  // Shower, // Removed - not available in lucide-react-native 
   Wrench, 
   FileText, 
   Dog,
@@ -38,7 +38,7 @@ const categoryIcons: Record<string, any> = {
   'Lighting & Power': Zap,
   'Communication & Navigation': Radio,
   'Shelter & Warmth': Home,
-  'Sanitation & Hygiene': Shower,
+  'Sanitation & Hygiene': Droplets, // Using Droplets instead of Shower
   'Tools & Safety': Wrench,
   'Important Documents & Money': FileText,
   'Pets': Dog,
@@ -139,7 +139,7 @@ export default function ChecklistDetailScreen() {
       
     } catch (error) {
       console.error('Failed to load checklist:', error)
-      Alert.alert('Error', `Failed to load checklist: ${error.message}`)
+      Alert.alert('Error', `Failed to load checklist: ${error instanceof Error ? error.message : 'Unknown error'}`)
       router.back()
     } finally {
       setLoading(false)
@@ -166,7 +166,7 @@ export default function ChecklistDetailScreen() {
       console.error('Failed to generate checklist:', error)
       
       // Check if it's a quota error and show helpful message
-      const errorMessage = error?.message?.toLowerCase() || '';
+      const errorMessage = (error instanceof Error ? error.message : 'Unknown error').toLowerCase();
       if (errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
         Alert.alert(
           'API Quota Exceeded', 
@@ -174,7 +174,7 @@ export default function ChecklistDetailScreen() {
           [{ text: 'OK' }]
         )
       } else {
-        Alert.alert('Error', `Failed to generate checklist: ${error.message}`)
+        Alert.alert('Error', `Failed to generate checklist: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
     } finally {
       setGenerating(false)

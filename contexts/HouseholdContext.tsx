@@ -50,7 +50,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
         .eq('account_id', account.id);
 
       if (memberships) {
-        const householdList = memberships.map(m => m.households).filter(Boolean) as Tables<'households'>[];
+        const householdList = memberships.map(m => m.households).filter(Boolean) as unknown as Tables<'households'>[];
         
         // Geocode households that don't have coordinates
         const updatedHouseholds = await Promise.all(
