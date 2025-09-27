@@ -7,12 +7,23 @@ import { HouseholdProvider } from '@/contexts/HouseholdContext';
 import * as SplashScreen from 'expo-splash-screen';
 
 export default function RootLayout() {
+  // console.log('RootLayout - Rendered');
+  const router = useRouter();
   useFrameworkReady();
 
   useEffect(() => {
+    // console.log('RootLayout - useEffect called');
     SplashScreen.hideAsync().catch(() => {
-      // Ignore splash screen errors
+      console.log('RootLayout - Error hiding splash screen');
     });
+
+    // Force navigation test after 1 seconds
+    const timer = setTimeout(() => {
+      // console.log('RootLayout - Force navigation to login');
+      router.replace('/auth/login');
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (
