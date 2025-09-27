@@ -232,11 +232,21 @@ export default function DashboardScreen() {
         )}
       </View>
 
-      {/* Cute Welcome Box */}
+      {/* Enhanced Welcome Box */}
       <View style={styles.welcomeBox}>
-        <View style={styles.welcomeContent}>
-          <Home size={24} color={colors.primary} />
-          <Text style={styles.welcomeText}>Your family's safety starts here!</Text>
+        <View style={styles.welcomeTopSection}>
+          <View style={styles.welcomeDecorLeft} />
+          <Text style={styles.welcomeEmoji}>🏠</Text>
+          <View style={styles.welcomeDecorRight} />
+        </View>
+        <View style={styles.welcomeTextContainer}>
+          <Text style={styles.welcomeTitle}>Your family's safety starts here!</Text>
+          <Text style={styles.welcomeSubtitle}>Stay prepared, stay protected 🛡️</Text>
+        </View>
+        <View style={styles.welcomeBottomPattern}>
+          <View style={styles.patternDot} />
+          <View style={styles.patternDot} />
+          <View style={styles.patternDot} />
         </View>
       </View>
 
@@ -346,30 +356,81 @@ const styles = StyleSheet.create({
     color: colors.lightBlue,
   },
   welcomeBox: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: '#FAFAFF',
+    borderRadius: 28,
+    padding: 28,
     marginHorizontal: 24,
-    marginBottom: 16,
-    shadowColor: '#000',
+    marginBottom: 20,
+    shadowColor: '#8B5CF6',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 12,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 2,
+    borderColor: '#DDD6FE',
+    position: 'relative',
+    overflow: 'hidden',
   },
-  welcomeContent: {
+  welcomeTextContainer: {
+    alignItems: 'center',
+  },
+  welcomeTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#4F46E5',
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: 0.8,
+    lineHeight: 28,
+  },
+  welcomeSubtitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6B46C1',
+    textAlign: 'center',
+    opacity: 0.9,
+    letterSpacing: 0.3,
+  },
+  welcomeTopSection: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 20,
   },
-  welcomeText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.primary,
-    marginLeft: 12,
+  welcomeDecorLeft: {
+    width: 40,
+    height: 2,
+    backgroundColor: '#A78BFA',
+    borderRadius: 1,
+    marginRight: 16,
+  },
+  welcomeDecorRight: {
+    width: 40,
+    height: 2,
+    backgroundColor: '#A78BFA',
+    borderRadius: 1,
+    marginLeft: 16,
+  },
+  welcomeEmoji: {
+    fontSize: 36,
+    textAlign: 'center',
+  },
+  welcomeBottomPattern: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    gap: 8,
+  },
+  patternDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#A78BFA',
+    opacity: 0.7,
   },
   activeAlertBox: {
     backgroundColor: '#EEF2FF',
