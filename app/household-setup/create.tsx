@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { ArrowLeft, ChevronDown, Plus, X, Users, User, Phone } from 'lucide-react-native';
+import { formatPhoneNumber } from '@/utils/phoneUtils';
 import { colors } from '@/lib/theme';
 
 // Comprehensive list of countries with their ISO codes and names
@@ -309,6 +310,15 @@ export default function CreateHouseholdScreen() {
     isPet: false,
   });
   
+  // Creator information
+  const [creatorInfo, setCreatorInfo] = useState({
+    firstName: '',
+    lastName: '',
+    ageBand: 'Adult (18-64)',
+    medicalNote: '',
+    contactInfo: '',
+  });
+  
   const router = useRouter();
   const { user } = useAuth();
   const { refreshHouseholds } = useHousehold();
@@ -376,6 +386,11 @@ export default function CreateHouseholdScreen() {
       return;
     }
 
+    if (!creatorInfo.firstName || !creatorInfo.lastName) {
+      Alert.alert('Error', 'Please fill in your first and last name');
+      return;
+    }
+
     if (!user) {
       Alert.alert('Error', 'You must be logged in to create a household');
       return;
@@ -435,23 +450,26 @@ export default function CreateHouseholdScreen() {
       if (membershipError) throw membershipError;
 
       // Add members
-      const memberInserts = members.map(member => ({
+      const memberInserts: any[] = members.map(member => ({
         household_id: household.id,
         name: `${member.firstName} ${member.lastName}`.trim(),
         age_group: member.ageBand.split(' ')[0].toLowerCase(),
         medical_notes: member.medicalNote || null,
-        contact_info: member.contactInfo || null,
+        contact_info: member.contactInfo ? 
+          member.contactInfo.replace(/\D/g, '') : null,
         is_pet: member.isPet || false,
       }));
 
-      // Add yourself as a member
+      // Add yourself as a member (linked to your account)
       memberInserts.push({
         household_id: household.id,
-        name: `${user.user_metadata?.first_name || 'User'} ${user.user_metadata?.last_name || ''}`.trim(),
-        age_group: 'adult',
-        medical_notes: null,
-        contact_info: null,
+        name: `${creatorInfo.firstName} ${creatorInfo.lastName}`.trim(),
+        age_group: creatorInfo.ageBand.split(' ')[0].toLowerCase(),
+        medical_notes: creatorInfo.medicalNote || null,
+        contact_info: creatorInfo.contactInfo ? 
+          creatorInfo.contactInfo.replace(/\D/g, '') : null,
         is_pet: false,
+        claimed_by: user.id,
       });
 
       const { error: memberError } = await supabase
@@ -589,9 +607,89 @@ export default function CreateHouseholdScreen() {
             />
           </View>
 
+          {/* Creator Information Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Information</Text>
+            <Text style={styles.sectionDescription}>
+              Tell us about yourself first
+            </Text>
+            
+            <View style={styles.nameRow}>
+              <View style={[styles.inputGroup, styles.nameField]}>
+                <Text style={styles.label}>First Name *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={creatorInfo.firstName}
+                  onChangeText={(text) => setCreatorInfo(prev => ({ ...prev, firstName: text }))}
+                  placeholder="Your first name"
+                  autoCapitalize="words"
+                />
+              </View>
+              <View style={[styles.inputGroup, styles.nameField]}>
+                <Text style={styles.label}>Last Name *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={creatorInfo.lastName}
+                  onChangeText={(text) => setCreatorInfo(prev => ({ ...prev, lastName: text }))}
+                  placeholder="Your last name"
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Age Band *</Text>
+              <View style={styles.ageBandContainer}>
+                {AGE_BANDS.map((band) => (
+                  <TouchableOpacity
+                    key={band}
+                    style={[
+                      styles.ageBandButton,
+                      creatorInfo.ageBand === band && styles.ageBandButtonSelected
+                    ]}
+                    onPress={() => setCreatorInfo(prev => ({ ...prev, ageBand: band }))}
+                  >
+                    <Text style={[
+                      styles.ageBandText,
+                      creatorInfo.ageBand === band && styles.ageBandTextSelected
+                    ]}>
+                      {band}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Medical Note (Optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={creatorInfo.medicalNote}
+                onChangeText={(text) => setCreatorInfo(prev => ({ ...prev, medicalNote: text }))}
+                placeholder="e.g., asthma inhaler"
+                multiline
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Contact Info (Optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={creatorInfo.contactInfo}
+                onChangeText={(text) => {
+                  const formatted = formatPhoneNumber(text);
+                  setCreatorInfo(prev => ({ ...prev, contactInfo: formatted }));
+                }}
+                placeholder="(000) 000-0000"
+                keyboardType="phone-pad"
+                maxLength={14}
+              />
+            </View>
+          </View>
+
           {/* Members Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Household Members & Pets</Text>
+            <Text style={styles.sectionTitle}>Other Household Members & Pets</Text>
 
             {/* Members List */}
             {members.map((member) => (
@@ -703,10 +801,14 @@ export default function CreateHouseholdScreen() {
                   <TextInput
                     style={styles.input}
                     value={newMember.contactInfo}
-                    onChangeText={(text) => setNewMember(prev => ({ ...prev, contactInfo: text }))}
-                    placeholder="e.g., mobile marked ICE"
+                    onChangeText={(text) => {
+                      const formatted = formatPhoneNumber(text);
+                      setNewMember(prev => ({ ...prev, contactInfo: formatted }));
+                    }}
+                    placeholder="(000) 000-0000"
                     placeholderTextColor="#6b7280"
                     keyboardType="phone-pad"
+                    maxLength={14}
                   />
                 </View>
 

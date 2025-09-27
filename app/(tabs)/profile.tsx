@@ -17,6 +17,7 @@ import { useHousehold } from '@/contexts/HouseholdContext';
 import DisasterMap from '@/components/maps/DisasterMap';
 import { colors } from '@/lib/theme';
 import { supabase, Tables } from '@/lib/supabase';
+import { formatPhoneNumber } from '@/utils/phoneUtils';
 import { 
   Home,
   Users,
@@ -72,13 +73,38 @@ export default function HouseholdScreen() {
     
     setLoadingMembers(true);
     try {
-      const { data, error } = await supabase
+      // First get members
+      const { data: membersData, error } = await supabase
         .from('members')
         .select('*')
         .eq('household_id', currentHousehold.id);
       
       if (error) throw error;
-      setMembers(data || []);
+      
+      // Then get account info for claimed members
+      const membersWithAccounts = await Promise.all(
+        (membersData || []).map(async (member) => {
+          if (member.claimed_by) {
+            const { data: account } = await supabase
+              .from('accounts')
+              .select('id, display_name, user_id')
+              .eq('user_id', member.claimed_by)
+              .single();
+            
+            console.log('Member with account:', { 
+              memberName: member.name, 
+              claimedBy: member.claimed_by, 
+              account: account,
+              currentUserId: user?.id 
+            });
+            
+            return { ...member, account, isCurrentUser: member.claimed_by === user?.id };
+          }
+          return member;
+        })
+      );
+      
+      setMembers(membersWithAccounts);
     } catch (error) {
       console.error('Error fetching members:', error);
       Alert.alert('Error', 'Failed to fetch household members');
@@ -397,10 +423,39 @@ export default function HouseholdScreen() {
                   <View key={member.id} style={styles.memberItem}>
                     <Users size={20} color="#6B7280" />
                     <View style={styles.memberInfo}>
-                      <Text style={styles.memberName}>{member.name}</Text>
+                      <View style={styles.memberNameRow}>
+                        <Text style={styles.memberName}>{member.name}</Text>
+                        {(member as any).account ? (
+                          <View style={styles.linkedIndicator}>
+                            <Check size={12} color="#059669" />
+                            <Text style={styles.linkedText}>
+                              {(member as any).isCurrentUser ? 'You' : 'Linked'}
+                            </Text>
+                          </View>
+                        ) : (
+                          <View style={styles.unlinkedIndicator}>
+                            <Text style={styles.unlinkedText}>Available</Text>
+                          </View>
+                        )}
+                      </View>
                       <Text style={styles.memberAgeGroup}>
                         {member.age_group.charAt(0).toUpperCase() + member.age_group.slice(1)}
                       </Text>
+                      {member.contact_info && (
+                        <Text style={styles.memberDetail}>
+                          📞 {formatPhoneNumber(member.contact_info)}
+                        </Text>
+                      )}
+                      {member.medical_notes && (
+                        <Text style={styles.memberDetail}>
+                          🏥 {member.medical_notes}
+                        </Text>
+                      )}
+                      {(member as any).account && (
+                        <Text style={styles.memberAccount}>
+                          {(member as any).isCurrentUser ? 'Your account' : `Account: ${(member as any).account.display_name}`}
+                        </Text>
+                      )}
                     </View>
                     <View style={styles.memberActions}>
                       <TouchableOpacity
@@ -423,13 +478,14 @@ export default function HouseholdScreen() {
                               firstName: nameParts[0] || '',
                               lastName: nameParts.slice(1).join(' '),
                               ageGroup: member.age_group,
-                              medicalNotes: member.special_needs || '',
-                              contactInfo: '',
+                              medicalNotes: member.medical_notes || '',
+                              contactInfo: member.contact_info ? 
+                                formatPhoneNumber(member.contact_info) : '',
                               hasPet: !!pet,
                               petName: pet?.name || '',
                               petType: pet?.type || '',
                               petSize: (pet?.size as 'small' | 'medium' | 'large') || 'medium',
-                              petNotes: pet?.special_needs || '',
+                              petNotes: pet?.medical_notes || '',
                             });
                             setShowMemberModal(true);
                           };
@@ -687,13 +743,12 @@ export default function HouseholdScreen() {
                 style={styles.formInput}
                 value={memberForm.contactInfo}
                 onChangeText={(text) => {
-                  // Only allow numbers and limit to 10 digits
-                  const cleaned = text.replace(/\D/g, '').slice(0, 10);
-                  setMemberForm(prev => ({ ...prev, contactInfo: cleaned }));
+                  const formatted = formatPhoneNumber(text);
+                  setMemberForm(prev => ({ ...prev, contactInfo: formatted }));
                 }}
-                placeholder="Enter phone number (10 digits)"
-                keyboardType="numeric"
-                maxLength={10}
+                placeholder="(000) 000-0000"
+                keyboardType="phone-pad"
+                maxLength={14}
               />
             </View>
 
@@ -801,7 +856,7 @@ export default function HouseholdScreen() {
                     age_group: memberForm.ageGroup,
                     medical_notes: memberForm.medicalNotes || null,
                     contact_info: memberForm.contactInfo ? 
-                      Number(memberForm.contactInfo.replace(/\D/g, '')) : null,
+                      memberForm.contactInfo.replace(/\D/g, '') : null,
                   };
 
                   if (editingMember) {
@@ -834,14 +889,53 @@ export default function HouseholdScreen() {
                       medical_notes: memberForm.petNotes || null,
                     };
 
-                    const { error: petError } = await supabase
-                      .from('pets')
-                      .insert(petData);
+                    if (editingMember) {
+                      // Check if pet already exists for this member/household
+                      const { data: existingPets } = await supabase
+                        .from('pets')
+                        .select('id')
+                        .eq('household_id', currentHousehold.id)
+                        .limit(1);
 
-                    if (petError) {
-                      console.error('Pet insert error:', petError);
-                      throw petError;
+                      if (existingPets && existingPets.length > 0) {
+                        // Update existing pet
+                        const { error: petError } = await supabase
+                          .from('pets')
+                          .update(petData)
+                          .eq('id', existingPets[0].id);
+
+                        if (petError) {
+                          console.error('Pet update error:', petError);
+                          throw petError;
+                        }
+                      } else {
+                        // Insert new pet
+                        const { error: petError } = await supabase
+                          .from('pets')
+                          .insert(petData);
+
+                        if (petError) {
+                          console.error('Pet insert error:', petError);
+                          throw petError;
+                        }
+                      }
+                    } else {
+                      // Insert new pet for new member
+                      const { error: petError } = await supabase
+                        .from('pets')
+                        .insert(petData);
+
+                      if (petError) {
+                        console.error('Pet insert error:', petError);
+                        throw petError;
+                      }
                     }
+                  } else if (editingMember && !memberForm.hasPet) {
+                    // Delete pet if member no longer has one
+                    await supabase
+                      .from('pets')
+                      .delete()
+                      .eq('household_id', currentHousehold.id);
                   }
 
                   await fetchMembers();
@@ -1010,7 +1104,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   submitButton: {
-    backgroundColor: colors.buttonSecondary,
+    backgroundColor: colors.buttonPrimary,
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
@@ -1059,14 +1153,62 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     flex: 1,
   },
+  memberNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
   memberName: {
     fontSize: 16,
     color: '#1f2937',
+    fontWeight: '500',
+    flex: 1,
+  },
+  linkedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  linkedText: {
+    fontSize: 10,
+    color: '#059669',
+    fontWeight: '600',
+    marginLeft: 2,
+  },
+  unlinkedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+  },
+  unlinkedText: {
+    fontSize: 10,
+    color: '#6B7280',
     fontWeight: '500',
   },
   memberAgeGroup: {
     fontSize: 14,
     color: '#6B7280',
+  },
+  memberDetail: {
+    fontSize: 12,
+    color: '#374151',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  memberAccount: {
+    fontSize: 12,
+    color: '#059669',
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   memberActions: {
     flexDirection: 'row',

@@ -95,22 +95,31 @@ export interface Database {
           id: string;
           household_id: string;
           name: string;
-          age_group: 'infant' | 'child' | 'adult' | 'senior';
-          special_needs?: string;
+          age_group: 'infant' | 'child' | 'teen' | 'adult' | 'senior';
+          medical_notes?: string;
+          contact_info?: string;
+          is_pet: boolean;
+          claimed_by?: string;
           created_at: string;
         };
         Insert: {
           id?: string;
           household_id: string;
           name: string;
-          age_group: 'infant' | 'child' | 'adult' | 'senior';
-          special_needs?: string;
+          age_group: 'infant' | 'child' | 'teen' | 'adult' | 'senior';
+          medical_notes?: string;
+          contact_info?: string;
+          is_pet?: boolean;
+          claimed_by?: string;
           created_at?: string;
         };
         Update: {
           name?: string;
-          age_group?: 'infant' | 'child' | 'adult' | 'senior';
-          special_needs?: string;
+          age_group?: 'infant' | 'child' | 'teen' | 'adult' | 'senior';
+          medical_notes?: string;
+          contact_info?: string;
+          is_pet?: boolean;
+          claimed_by?: string;
         };
       };
       pets: {
@@ -120,7 +129,7 @@ export interface Database {
           name: string;
           type: string;
           size: 'small' | 'medium' | 'large';
-          special_needs?: string;
+          medical_notes?: string;
           created_at: string;
         };
         Insert: {
@@ -129,14 +138,14 @@ export interface Database {
           name: string;
           type: string;
           size: 'small' | 'medium' | 'large';
-          special_needs?: string;
+          medical_notes?: string;
           created_at?: string;
         };
         Update: {
           name?: string;
           type?: string;
           size?: 'small' | 'medium' | 'large';
-          special_needs?: string;
+          medical_notes?: string;
         };
       };
       checklist_items: {
