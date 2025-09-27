@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
+import { colors } from '@/lib/theme';
 import { supabase, Tables } from '@/lib/supabase';
 import { 
   Home,
@@ -129,7 +130,7 @@ export default function HouseholdScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Current Household</Text>
           <View style={[styles.householdCard, styles.currentHouseholdCard]}>
-            <Home size={20} color="#DC2626" />
+            <Home size={20} color="#354eab" />
             <View style={styles.householdInfo}>
               <Text style={styles.householdName}>{currentHousehold.name}</Text>
               <Text style={styles.householdLocation}>
@@ -151,15 +152,15 @@ export default function HouseholdScreen() {
                 key={household.id}
                 style={[
                   styles.householdItem,
-                  currentHousehold?.id === household.id && styles.selectedHousehold
+                  currentHousehold?.id === household.id && { backgroundColor: colors.buttonSecondary + '22' }
                 ]}
                 onPress={() => handleSwitchHousehold(household.id)}
               >
-                <Home size={20} color={currentHousehold?.id === household.id ? "#DC2626" : "#6B7280"} />
+                <Home size={20} color={currentHousehold?.id === household.id ? colors.buttonSecondary : "#6B7280"} />
                 <View style={styles.householdInfo}>
                   <Text style={[
                     styles.householdName,
-                    currentHousehold?.id === household.id && styles.selectedHouseholdText
+                    currentHousehold?.id === household.id && { color: colors.buttonSecondary }
                   ]}>
                     {household.name}
                   </Text>
@@ -168,7 +169,7 @@ export default function HouseholdScreen() {
                   </Text>
                 </View>
                 {currentHousehold?.id === household.id && (
-                  <Check size={20} color="#059669" />
+                  <Check size={20} color={colors.buttonSecondary} />
                 )}
               </TouchableOpacity>
             ))}
@@ -181,17 +182,17 @@ export default function HouseholdScreen() {
         <Text style={styles.sectionTitle}>Household Actions</Text>
         <View style={styles.actionList}>
           <TouchableOpacity style={styles.actionItem} onPress={handleCreateHousehold}>
-            <Plus size={20} color="#DC2626" />
+            <Plus size={20} color="#354eab" />
             <Text style={styles.actionText}>Create New Household</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionItem} onPress={handleJoinHousehold}>
-            <Users size={20} color="#DC2626" />
+            <Users size={20} color="#354eab" />
             <Text style={styles.actionText}>Join Household</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionItem} onPress={handleInviteMembers}>
-            <Share size={20} color="#DC2626" />
+            <Share size={20} color="#354eab" />
             <Text style={styles.actionText}>Invite Members</Text>
           </TouchableOpacity>
         </View>
@@ -218,7 +219,7 @@ export default function HouseholdScreen() {
             style={[styles.menuItem, styles.signOutItem]} 
             onPress={handleSignOut}
           >
-            <LogOut size={20} color="#DC2626" />
+            <LogOut size={20} color="#354eab" />
             <Text style={[styles.menuText, styles.signOutText]}>Sign Out</Text>
           </TouchableOpacity>
         </View>
@@ -325,7 +326,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   currentHouseholdCard: {
-    borderColor: '#DC2626',
+    borderColor: '#354eab',
     borderWidth: 2,
   },
   householdList: {
@@ -349,7 +350,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F3F4F6',
   },
   selectedHousehold: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: colors.buttonSecondary + '22',
   },
   householdInfo: {
     marginLeft: 12,
@@ -362,7 +363,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   selectedHouseholdText: {
-    color: '#DC2626',
+    color: '#354eab',
   },
   householdLocation: {
     fontSize: 14,
@@ -426,7 +427,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   signOutText: {
-    color: '#DC2626',
+    color: '#354eab',
   },
   appInfo: {
     alignItems: 'center',

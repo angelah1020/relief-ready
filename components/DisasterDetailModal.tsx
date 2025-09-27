@@ -9,6 +9,7 @@ import {
   Modal,
 } from 'react-native';
 import { ArrowLeft, AlertTriangle, Wind, Flame, Droplets, Mountain, Tornado, Sun } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
 
 const { height } = Dimensions.get('window');
 
@@ -53,7 +54,7 @@ const hazardConfig: Record<string, { icon: any; label: string; color: string; de
   heat: { 
     icon: Sun, 
     label: 'Heat Wave', 
-    color: '#DC2626',
+    color: '#354eab',
     description: 'Extreme heat can be dangerous, especially for vulnerable populations. Staying cool and hydrated is critical during heat waves.'
   },
 };
@@ -65,8 +66,8 @@ export default function DisasterDetailModal({ visible, onClose, hazardType, read
   const getReadinessLevel = (percentage: number) => {
     if (percentage >= 80) return { level: 'Excellent', color: '#059669' };
     if (percentage >= 60) return { level: 'Good', color: '#D97706' };
-    if (percentage >= 40) return { level: 'Fair', color: '#DC2626' };
-    return { level: 'Poor', color: '#DC2626' };
+    if (percentage >= 40) return { level: 'Fair', color: '#354eab' };
+    return { level: 'Poor', color: '#354eab' };
   };
 
   const readiness = getReadinessLevel(readinessPercentage);
@@ -158,7 +159,7 @@ export default function DisasterDetailModal({ visible, onClose, hazardType, read
               </View>
 
               <View style={styles.areaItem}>
-                <View style={[styles.areaIcon, { backgroundColor: '#FEF3C7' }]}>
+                <View style={[styles.areaIcon, { backgroundColor: colors.buttonSecondary + '22' }]}>
                   <AlertTriangle size={20} color="#D97706" />
                 </View>
                 <View style={styles.areaContent}>
@@ -170,8 +171,8 @@ export default function DisasterDetailModal({ visible, onClose, hazardType, read
               </View>
 
               <View style={styles.areaItem}>
-                <View style={[styles.areaIcon, { backgroundColor: '#FEE2E2' }]}>
-                  <AlertTriangle size={20} color="#DC2626" />
+                <View style={[styles.areaIcon, { backgroundColor: colors.buttonSecondary + '22' }]}>
+                  <AlertTriangle size={20} color="#354eab" />
                 </View>
                 <View style={styles.areaContent}>
                   <Text style={styles.areaTitle}>Communication</Text>
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actionButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#354eab',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,

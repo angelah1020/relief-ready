@@ -12,18 +12,7 @@ export default function RootLayout() {
   useFrameworkReady();
 
   useEffect(() => {
-    // console.log('RootLayout - useEffect called');
-    SplashScreen.hideAsync().catch(() => {
-      console.log('RootLayout - Error hiding splash screen');
-    });
-
-    // Force navigation test after 1 seconds
-    const timer = setTimeout(() => {
-      // console.log('RootLayout - Force navigation to login');
-      router.replace('/auth/login');
-    }, 1000);
-
-    return () => clearTimeout(timer);
+    return () => {};
   }, []);
 
   return (

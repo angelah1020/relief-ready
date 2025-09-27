@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { ArrowLeft, ChevronDown, Plus, X, Users, User, Phone } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
 
 // Comprehensive list of countries with their ISO codes and names
 const COUNTRIES = [
@@ -586,7 +587,7 @@ export default function CreateHouseholdScreen() {
                 style={styles.addButton}
                 onPress={() => setShowAddMember(true)}
               >
-                <Plus size={20} color="#DC2626" />
+                <Plus size={20} color="#354eab" />
                 <Text style={styles.addButtonText}>Add Member</Text>
               </TouchableOpacity>
             </View>
@@ -616,7 +617,7 @@ export default function CreateHouseholdScreen() {
                   style={styles.removeButton}
                   onPress={() => removeMember(member.id)}
                 >
-                  <X size={20} color="#DC2626" />
+                  <X size={20} color="#354eab" />
                 </TouchableOpacity>
               </View>
             ))}
@@ -754,7 +755,7 @@ export default function CreateHouseholdScreen() {
                     style={styles.removeInviteButton}
                     onPress={() => removeInviteEmail(index)}
                   >
-                    <X size={20} color="#DC2626" />
+                    <X size={20} color="#354eab" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -764,7 +765,7 @@ export default function CreateHouseholdScreen() {
               style={styles.addInviteButton}
               onPress={addInviteEmail}
             >
-              <Plus size={20} color="#DC2626" />
+              <Plus size={20} color="#354eab" />
               <Text style={styles.addInviteButtonText}>Add Another Email</Text>
             </TouchableOpacity>
           </View>
@@ -927,15 +928,15 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
+    backgroundColor: colors.buttonSecondary + '22',
+    borderColor: colors.buttonSecondary,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   addButtonText: {
-    color: '#DC2626',
+    color: '#354eab',
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 4,
@@ -972,7 +973,7 @@ const styles = StyleSheet.create({
   },
   medicalNote: {
     fontSize: 12,
-    color: '#DC2626',
+    color: '#354eab',
     fontStyle: 'italic',
     marginBottom: 2,
   },
@@ -1024,8 +1025,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   ageBandButtonSelected: {
-    backgroundColor: '#DC2626',
-    borderColor: '#DC2626',
+    backgroundColor: '#354eab',
+    borderColor: '#354eab',
   },
   ageBandText: {
     fontSize: 12,
@@ -1055,8 +1056,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#DC2626',
-    borderColor: '#DC2626',
+    backgroundColor: '#354eab',
+    borderColor: '#354eab',
   },
   checkmark: {
     color: '#ffffff',
@@ -1085,7 +1086,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     flex: 1,
-    backgroundColor: '#DC2626',
+    backgroundColor: '#354eab',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
@@ -1118,8 +1119,8 @@ const styles = StyleSheet.create({
   addInviteButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
+    backgroundColor: colors.buttonSecondary + '22',
+    borderColor: colors.buttonSecondary,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 16,
@@ -1127,13 +1128,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   addInviteButtonText: {
-    color: '#DC2626',
+    color: '#354eab',
     fontSize: 14,
     fontWeight: '600',
     marginLeft: 8,
   },
   button: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#354eab',
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',

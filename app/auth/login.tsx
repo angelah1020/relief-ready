@@ -9,10 +9,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { Shield } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -33,7 +34,8 @@ export default function LoginScreen() {
     if (error) {
       Alert.alert('Error', error.message);
     } else {
-      router.replace('/');
+      // Go directly to the dashboard to avoid re-displaying the splash screen
+      router.replace('/(tabs)/dashboard');
     }
     setLoading(false);
   };
@@ -46,8 +48,11 @@ export default function LoginScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Shield size={48} color="#DC2626" />
-            <Text style={styles.title}>Relief Ready</Text>
+            <Image
+              source={require('@/assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={styles.subtitle}>Emergency Preparedness</Text>
           </View>
 
@@ -105,7 +110,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -120,17 +125,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 48,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginTop: 16,
-    marginBottom: 8,
+  logo: {
+    width: 300,
+    height: 120,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: colors.lightBlue,
     textAlign: 'center',
+    marginTop: 16,
   },
   form: {
     width: '100%',
@@ -141,21 +144,21 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: colors.primary,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.inputBackground,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#1f2937',
+    color: colors.primary,
   },
   button: {
-    backgroundColor: '#DC2626',
+    backgroundColor: colors.buttonPrimary,
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',
@@ -165,7 +168,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: '#ffffff',
+    color: colors.white,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -177,14 +180,14 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.lightBlue,
   },
   link: {
     marginLeft: 4,
   },
   linkText: {
     fontSize: 14,
-    color: '#DC2626',
+    color: colors.primary,
     fontWeight: '600',
   },
 });

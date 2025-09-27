@@ -35,7 +35,7 @@ export default function HouseholdSetupScreen() {
             style={styles.optionCard}
             onPress={handleCreateHousehold}
           >
-            <Home size={48} color="#DC2626" />
+            <Home size={48} color="#354eab" />
             <Text style={styles.optionTitle}>Create Household</Text>
             <Text style={styles.optionDescription}>
               Start a new household and invite family members

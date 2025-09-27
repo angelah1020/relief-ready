@@ -12,6 +12,7 @@ import {
 import { supabase, Tables } from '@/lib/supabase';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { Plus, Edit, Trash2, X } from 'lucide-react-native';
+import { colors } from '@/lib/theme';
 
 interface InventoryItemForm {
   description: string;
@@ -229,7 +230,7 @@ export default function InventoryScreen() {
                     style={[styles.actionButton, styles.deleteButton]}
                     onPress={() => handleDelete(item)}
                   >
-                    <Trash2 size={16} color="#DC2626" />
+                    <Trash2 size={16} color="#354eab" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -343,7 +344,7 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#DC2626',
+    backgroundColor: '#354eab',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -428,7 +429,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
   deleteButton: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colors.buttonSecondary + '22',
   },
   modalContainer: {
     flex: 1,
@@ -481,7 +482,7 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   saveButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#354eab',
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',
