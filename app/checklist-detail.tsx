@@ -24,7 +24,6 @@ import {
   Zap, 
   Radio, 
   Home, 
-  // Shower, // Removed - not available in lucide-react-native 
   Wrench, 
   FileText, 
   Dog,
@@ -137,9 +136,9 @@ export default function ChecklistDetailScreen() {
       
       setChecklistItems(items)
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load checklist:', error)
-      Alert.alert('Error', `Failed to load checklist: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      Alert.alert('Error', `Failed to load checklist: ${error?.message || 'Unknown error'}`)
       router.back()
     } finally {
       setLoading(false)
@@ -162,7 +161,7 @@ export default function ChecklistDetailScreen() {
       // Reload the checklist after generation
       await loadChecklist()
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to generate checklist:', error)
       
       // Check if it's a quota error and show helpful message
@@ -174,7 +173,7 @@ export default function ChecklistDetailScreen() {
           [{ text: 'OK' }]
         )
       } else {
-        Alert.alert('Error', `Failed to generate checklist: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        Alert.alert('Error', `Failed to generate checklist: ${error?.message || 'Unknown error'}`)
       }
     } finally {
       setGenerating(false)
@@ -229,7 +228,7 @@ export default function ChecklistDetailScreen() {
       <View key={category} style={styles.categorySection}>
         <View style={styles.categoryHeader}>
           <View style={styles.categoryIcon}>
-            <IconComponent size={20} color="#DC2626" />
+            <IconComponent size={20} color="#354eab" />
           </View>
           <Text style={styles.categoryTitle}>{category}</Text>
           <Text style={styles.categoryCount}>{items.length} items</Text>
@@ -245,7 +244,7 @@ export default function ChecklistDetailScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#DC2626" />
+        <ActivityIndicator size="large" color="#354eab" />
         <Text style={styles.loadingText}>Loading checklist...</Text>
       </View>
     )
@@ -436,7 +435,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#fef2f2',
+    backgroundColor: '#a8bafe',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -483,16 +482,16 @@ const styles = StyleSheet.create({
   },
   itemQuantity: {
     fontSize: 14,
-    color: '#DC2626',
+    color: '#354eab',
     fontWeight: '600',
-    backgroundColor: '#fef2f2',
+    backgroundColor: '#a8bafe',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
   backButtonText: {
     fontSize: 16,
-    color: '#DC2626',
+    color: '#354eab',
     fontWeight: '500',
   },
   generateContainer: {
@@ -516,7 +515,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   generateButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#354eab',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 32,

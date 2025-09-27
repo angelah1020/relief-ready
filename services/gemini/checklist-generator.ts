@@ -19,6 +19,11 @@ export interface HouseholdProfile {
   infants: number;
   pets: Record<string, number>;
   duration_days: number;
+  medical_needs?: Array<{
+    age_group: string;
+    medical_notes: string;
+  }>;
+  total_people?: number;
 }
 
 export class ChecklistGenerator {
@@ -71,30 +76,88 @@ export class ChecklistGenerator {
     const totalPeople = householdProfile.adults + householdProfile.children + householdProfile.seniors + householdProfile.infants;
     const totalPets = Object.values(householdProfile.pets).reduce((sum, count) => sum + count, 0);
     
-    return `Generate FEMA-based emergency checklist for ${hazardType}.
+    // Simplified calculations - all whole numbers
+    const waterPerPerson = 4; // 4 liters per person per day (simplified from 3.785)
+    const days = 3;
+    const waterTotal = totalPeople * waterPerPerson * days;
+    const foodTotal = totalPeople * 3 * days; // 3 meals per person per day
+    const flashlights = totalPeople >= 2 ? Math.floor(totalPeople / 2) : 1; // 1 flashlight per 2 people, minimum 1
+    const batteries = totalPeople * 2; // 2 battery packs per person
+    const toiletPaper = totalPeople * 2; // 2 rolls per person
+    
+    // Check if there are medical needs
+    const hasMedicalNeeds = householdProfile.medical_needs && householdProfile.medical_needs.length > 0;
+    const medicalNeedsText = hasMedicalNeeds ? 
+      `\n\nIMPORTANT: This household has medical conditions that require special supplies for 3 days:
+${householdProfile.medical_needs?.map(need => `- ${need.age_group}: ${need.medical_notes}`).join('\n') || ''}
 
-Household: ${totalPeople} people (${householdProfile.adults}A, ${householdProfile.children}C, ${householdProfile.seniors}S, ${householdProfile.infants}I), ${totalPets} pets, 3 days.
+For each medical condition, infer and include the necessary medical supplies, medications, and equipment needed for 3 days, even if not in standard FEMA checklists. Consider:
+- Prescription medications (3-day supply)
+- Medical equipment (oxygen tanks, CPAP machines, etc.)
+- Special dietary needs
+- Mobility aids
+- Medical monitoring devices
+- Emergency medical supplies specific to their condition` : '';
 
-Return JSON array:
-[{"item_key":"drinking_water","quantity_needed":${totalPeople * 9},"unit":"liters","hazard_type":"${hazardType}"},{"item_key":"non_perishable_food","quantity_needed":${totalPeople * 9},"unit":"meals","hazard_type":"${hazardType}"},{"item_key":"first_aid_kit","quantity_needed":1,"unit":"kits","hazard_type":"${hazardType}"},{"item_key":"flashlight","quantity_needed":${Math.max(1, Math.ceil(totalPeople / 2))},"unit":"items","hazard_type":"${hazardType}"},{"item_key":"batteries","quantity_needed":${Math.max(4, totalPeople * 2)},"unit":"packs","hazard_type":"${hazardType}"},{"item_key":"radio","quantity_needed":1,"unit":"items","hazard_type":"${hazardType}"},{"item_key":"blankets","quantity_needed":${totalPeople},"unit":"items","hazard_type":"${hazardType}"},{"item_key":"toilet_paper","quantity_needed":${Math.max(4, totalPeople * 2)},"unit":"rolls","hazard_type":"${hazardType}"},{"item_key":"whistle","quantity_needed":${totalPeople},"unit":"items","hazard_type":"${hazardType}"},{"item_key":"cash","quantity_needed":1,"unit":"sets","hazard_type":"${hazardType}"}${totalPets > 0 ? `,{"item_key":"pet_food","quantity_needed":${totalPets * 9},"unit":"meals","hazard_type":"${hazardType}"}` : ''}]`;
+    return `Generate emergency checklist for ${hazardType}.
+
+Household: ${totalPeople} people, ${totalPets} pets, 3 days.${medicalNeedsText}
+
+Calculate quantities (whole numbers only):
+- Water: ${totalPeople} × ${waterPerPerson} × ${days} = ${waterTotal} liters
+- Food: ${totalPeople} × 3 × ${days} = ${foodTotal} meals
+- Personal items: ${totalPeople} each
+- Shared items: 1 per household
+
+Return JSON:
+[{"item_key":"drinking_water","quantity_needed":${waterTotal},"unit":"liters","hazard_type":"${hazardType}"},{"item_key":"non_perishable_food","quantity_needed":${foodTotal},"unit":"meals","hazard_type":"${hazardType}"},{"item_key":"first_aid_kit","quantity_needed":1,"unit":"kits","hazard_type":"${hazardType}"},{"item_key":"flashlight","quantity_needed":${flashlights},"unit":"items","hazard_type":"${hazardType}"},{"item_key":"batteries","quantity_needed":${batteries},"unit":"packs","hazard_type":"${hazardType}"},{"item_key":"radio","quantity_needed":1,"unit":"items","hazard_type":"${hazardType}"},{"item_key":"blankets","quantity_needed":${totalPeople},"unit":"items","hazard_type":"${hazardType}"},{"item_key":"toilet_paper","quantity_needed":${toiletPaper},"unit":"rolls","hazard_type":"${hazardType}"},{"item_key":"whistle","quantity_needed":${totalPeople},"unit":"items","hazard_type":"${hazardType}"},{"item_key":"cash","quantity_needed":1,"unit":"sets","hazard_type":"${hazardType}"}${totalPets > 0 ? `,{"item_key":"pet_food","quantity_needed":${totalPets * 3},"unit":"meals","hazard_type":"${hazardType}"}` : ''}]`;
   }
 
   private buildBatchPrompt(householdProfile: HouseholdProfile, hazardTypes: string[]): string {
     const totalPeople = householdProfile.adults + householdProfile.children + householdProfile.seniors + householdProfile.infants;
     const totalPets = Object.values(householdProfile.pets).reduce((sum, count) => sum + count, 0);
     
-    return `Generate FEMA-based emergency checklists for ALL these hazards: ${hazardTypes.join(', ')}.
+    // Simplified calculations - all whole numbers
+    const waterPerPerson = 4; // 4 liters per person per day (simplified from 3.785)
+    const days = 3;
+    const waterTotal = totalPeople * waterPerPerson * days;
+    const foodTotal = totalPeople * 3 * days; // 3 meals per person per day
+    const flashlights = totalPeople >= 2 ? Math.floor(totalPeople / 2) : 1; // 1 flashlight per 2 people, minimum 1
+    const batteries = totalPeople * 2; // 2 battery packs per person
+    const toiletPaper = totalPeople * 2; // 2 rolls per person
+    
+    // Check if there are medical needs
+    const hasMedicalNeeds = householdProfile.medical_needs && householdProfile.medical_needs.length > 0;
+    const medicalNeedsText = hasMedicalNeeds ? 
+      `\n\nIMPORTANT: This household has medical conditions that require special supplies for 3 days:
+${householdProfile.medical_needs?.map(need => `- ${need.age_group}: ${need.medical_notes}`).join('\n') || ''}
 
-Household: ${totalPeople} people (${householdProfile.adults}A, ${householdProfile.children}C, ${householdProfile.seniors}S, ${householdProfile.infants}I), ${totalPets} pets, 3 days.
+For each medical condition, infer and include the necessary medical supplies, medications, and equipment needed for 3 days, even if not in standard FEMA checklists. Consider:
+- Prescription medications (3-day supply)
+- Medical equipment (oxygen tanks, CPAP machines, etc.)
+- Special dietary needs
+- Mobility aids
+- Medical monitoring devices
+- Emergency medical supplies specific to their condition` : '';
 
-Return JSON object with hazard types as keys:
+    return `Generate emergency checklists for: ${hazardTypes.join(', ')}.
+
+Household: ${totalPeople} people, ${totalPets} pets, 3 days.${medicalNeedsText}
+
+Standard items for all hazards (whole numbers only):
+- Water: ${waterTotal} liters
+- Food: ${foodTotal} meals  
+- Personal: ${totalPeople} each
+- Shared: 1 per household
+
+Return JSON:
 {
-  "hurricane": [{"item_key":"drinking_water","quantity_needed":${totalPeople * 9},"unit":"liters"},{"item_key":"non_perishable_food","quantity_needed":${totalPeople * 9},"unit":"meals"},{"item_key":"first_aid_kit","quantity_needed":1,"unit":"kits"},{"item_key":"flashlight","quantity_needed":${Math.max(1, Math.ceil(totalPeople / 2))},"unit":"items"},{"item_key":"batteries","quantity_needed":${Math.max(4, totalPeople * 2)},"unit":"packs"},{"item_key":"radio","quantity_needed":1,"unit":"items"},{"item_key":"blankets","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"toilet_paper","quantity_needed":${Math.max(4, totalPeople * 2)},"unit":"rolls"},{"item_key":"whistle","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"cash","quantity_needed":1,"unit":"sets"}${totalPets > 0 ? `,{"item_key":"pet_food","quantity_needed":${totalPets * 9},"unit":"meals"}` : ''}],
-  "wildfire": [/* similar items */],
-  "flood": [/* similar items */],
-  "earthquake": [/* similar items */],
-  "tornado": [/* similar items */],
-  "heat": [/* similar items */]
+  "hurricane": [{"item_key":"drinking_water","quantity_needed":${waterTotal},"unit":"liters"},{"item_key":"non_perishable_food","quantity_needed":${foodTotal},"unit":"meals"},{"item_key":"first_aid_kit","quantity_needed":1,"unit":"kits"},{"item_key":"flashlight","quantity_needed":${flashlights},"unit":"items"},{"item_key":"batteries","quantity_needed":${batteries},"unit":"packs"},{"item_key":"radio","quantity_needed":1,"unit":"items"},{"item_key":"blankets","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"toilet_paper","quantity_needed":${toiletPaper},"unit":"rolls"},{"item_key":"whistle","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"cash","quantity_needed":1,"unit":"sets"}${totalPets > 0 ? `,{"item_key":"pet_food","quantity_needed":${totalPets * 3},"unit":"meals"}` : ''}],
+  "wildfire": [{"item_key":"drinking_water","quantity_needed":${waterTotal},"unit":"liters"},{"item_key":"non_perishable_food","quantity_needed":${foodTotal},"unit":"meals"},{"item_key":"first_aid_kit","quantity_needed":1,"unit":"kits"},{"item_key":"flashlight","quantity_needed":${flashlights},"unit":"items"},{"item_key":"batteries","quantity_needed":${batteries},"unit":"packs"},{"item_key":"radio","quantity_needed":1,"unit":"items"},{"item_key":"blankets","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"toilet_paper","quantity_needed":${toiletPaper},"unit":"rolls"},{"item_key":"whistle","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"cash","quantity_needed":1,"unit":"sets"}${totalPets > 0 ? `,{"item_key":"pet_food","quantity_needed":${totalPets * 3},"unit":"meals"}` : ''}],
+  "flood": [{"item_key":"drinking_water","quantity_needed":${waterTotal},"unit":"liters"},{"item_key":"non_perishable_food","quantity_needed":${foodTotal},"unit":"meals"},{"item_key":"first_aid_kit","quantity_needed":1,"unit":"kits"},{"item_key":"flashlight","quantity_needed":${flashlights},"unit":"items"},{"item_key":"batteries","quantity_needed":${batteries},"unit":"packs"},{"item_key":"radio","quantity_needed":1,"unit":"items"},{"item_key":"blankets","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"toilet_paper","quantity_needed":${toiletPaper},"unit":"rolls"},{"item_key":"whistle","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"cash","quantity_needed":1,"unit":"sets"}${totalPets > 0 ? `,{"item_key":"pet_food","quantity_needed":${totalPets * 3},"unit":"meals"}` : ''}],
+  "earthquake": [{"item_key":"drinking_water","quantity_needed":${waterTotal},"unit":"liters"},{"item_key":"non_perishable_food","quantity_needed":${foodTotal},"unit":"meals"},{"item_key":"first_aid_kit","quantity_needed":1,"unit":"kits"},{"item_key":"flashlight","quantity_needed":${flashlights},"unit":"items"},{"item_key":"batteries","quantity_needed":${batteries},"unit":"packs"},{"item_key":"radio","quantity_needed":1,"unit":"items"},{"item_key":"blankets","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"toilet_paper","quantity_needed":${toiletPaper},"unit":"rolls"},{"item_key":"whistle","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"cash","quantity_needed":1,"unit":"sets"}${totalPets > 0 ? `,{"item_key":"pet_food","quantity_needed":${totalPets * 3},"unit":"meals"}` : ''}],
+  "tornado": [{"item_key":"drinking_water","quantity_needed":${waterTotal},"unit":"liters"},{"item_key":"non_perishable_food","quantity_needed":${foodTotal},"unit":"meals"},{"item_key":"first_aid_kit","quantity_needed":1,"unit":"kits"},{"item_key":"flashlight","quantity_needed":${flashlights},"unit":"items"},{"item_key":"batteries","quantity_needed":${batteries},"unit":"packs"},{"item_key":"radio","quantity_needed":1,"unit":"items"},{"item_key":"blankets","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"toilet_paper","quantity_needed":${toiletPaper},"unit":"rolls"},{"item_key":"whistle","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"cash","quantity_needed":1,"unit":"sets"}${totalPets > 0 ? `,{"item_key":"pet_food","quantity_needed":${totalPets * 3},"unit":"meals"}` : ''}],
+  "heat": [{"item_key":"drinking_water","quantity_needed":${waterTotal},"unit":"liters"},{"item_key":"non_perishable_food","quantity_needed":${foodTotal},"unit":"meals"},{"item_key":"first_aid_kit","quantity_needed":1,"unit":"kits"},{"item_key":"flashlight","quantity_needed":${flashlights},"unit":"items"},{"item_key":"batteries","quantity_needed":${batteries},"unit":"packs"},{"item_key":"radio","quantity_needed":1,"unit":"items"},{"item_key":"blankets","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"toilet_paper","quantity_needed":${toiletPaper},"unit":"rolls"},{"item_key":"whistle","quantity_needed":${totalPeople},"unit":"items"},{"item_key":"cash","quantity_needed":1,"unit":"sets"}${totalPets > 0 ? `,{"item_key":"pet_food","quantity_needed":${totalPets * 3},"unit":"meals"}` : ''}]
 }`;
   }
 
