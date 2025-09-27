@@ -113,6 +113,7 @@ export default function SignupScreen() {
                   value={firstName}
                   onChangeText={setFirstName}
                   placeholder="First name"
+                  placeholderTextColor="#6b7280"
                   autoCapitalize="words"
                 />
               </View>
@@ -123,6 +124,7 @@ export default function SignupScreen() {
                   value={lastName}
                   onChangeText={setLastName}
                   placeholder="Last name"
+                  placeholderTextColor="#6b7280"
                   autoCapitalize="words"
                 />
               </View>

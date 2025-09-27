@@ -516,6 +516,7 @@ export default function CreateHouseholdScreen() {
               value={householdName}
               onChangeText={setHouseholdName}
               placeholder="My Household"
+              placeholderTextColor="#6b7280"
               autoCapitalize="words"
             />
           </View>
@@ -572,6 +573,7 @@ export default function CreateHouseholdScreen() {
               value={postalCode}
               onChangeText={setPostalCode}
               placeholder="Enter your postal code"
+              placeholderTextColor="#6b7280"
               keyboardType="default"
             />
           </View>
@@ -632,6 +634,7 @@ export default function CreateHouseholdScreen() {
                       value={newMember.firstName}
                       onChangeText={(text) => setNewMember(prev => ({ ...prev, firstName: text }))}
                       placeholder="First name"
+                      placeholderTextColor="#6b7280"
                       autoCapitalize="words"
                     />
                   </View>
@@ -642,6 +645,7 @@ export default function CreateHouseholdScreen() {
                       value={newMember.lastName}
                       onChangeText={(text) => setNewMember(prev => ({ ...prev, lastName: text }))}
                       placeholder="Last name"
+                      placeholderTextColor="#6b7280"
                       autoCapitalize="words"
                     />
                   </View>
@@ -677,6 +681,7 @@ export default function CreateHouseholdScreen() {
                     value={newMember.medicalNote}
                     onChangeText={(text) => setNewMember(prev => ({ ...prev, medicalNote: text }))}
                     placeholder="e.g., asthma inhaler"
+                    placeholderTextColor="#6b7280"
                     multiline
                   />
                 </View>
@@ -688,6 +693,7 @@ export default function CreateHouseholdScreen() {
                     value={newMember.contactInfo}
                     onChangeText={(text) => setNewMember(prev => ({ ...prev, contactInfo: text }))}
                     placeholder="e.g., mobile marked ICE"
+                    placeholderTextColor="#6b7280"
                     keyboardType="phone-pad"
                   />
                 </View>
@@ -739,6 +745,7 @@ export default function CreateHouseholdScreen() {
                   value={email}
                   onChangeText={(text) => updateInviteEmail(index, text)}
                   placeholder="Enter email address"
+                  placeholderTextColor="#6b7280"
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
