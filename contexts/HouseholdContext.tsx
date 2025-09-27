@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, Tables } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
+import { geocodeZipCode } from '@/lib/utils/geocoding';
 
 interface HouseholdContextType {
   currentHousehold: Tables<'households'> | null;
@@ -50,11 +51,41 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
 
       if (memberships) {
         const householdList = memberships.map(m => m.households).filter(Boolean) as Tables<'households'>[];
-        setHouseholds(householdList);
+        
+        // Geocode households that don't have coordinates
+        const updatedHouseholds = await Promise.all(
+          householdList.map(async (household) => {
+            if (!household.latitude || !household.longitude) {
+              try {
+                const coordinates = await geocodeZipCode(household.zip_code, household.country);
+                if (coordinates) {
+                  // Update household with coordinates
+                  const { data: updatedHousehold } = await supabase
+                    .from('households')
+                    .update({
+                      latitude: coordinates.latitude,
+                      longitude: coordinates.longitude,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', household.id)
+                    .select()
+                    .single();
+                  
+                  return updatedHousehold || household;
+                }
+              } catch (error) {
+                console.warn('Failed to geocode household:', error);
+              }
+            }
+            return household;
+          })
+        );
+        
+        setHouseholds(updatedHouseholds);
         
         // Set first household as current if none selected
-        if (!currentHousehold && householdList.length > 0) {
-          setCurrentHousehold(householdList[0]);
+        if (!currentHousehold && updatedHouseholds.length > 0) {
+          setCurrentHousehold(updatedHouseholds[0]);
         }
       }
     } catch (error) {

@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { HouseholdProvider } from '@/contexts/HouseholdContext';
+import { MapProvider } from '@/contexts/MapContext';
 import * as SplashScreen from 'expo-splash-screen';
 
 export default function RootLayout() {
@@ -18,11 +19,13 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <HouseholdProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <StatusBar style="auto" />
+        <MapProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          <StatusBar style="auto" />
+        </MapProvider>
       </HouseholdProvider>
     </AuthProvider>
   );
