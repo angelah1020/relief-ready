@@ -113,6 +113,7 @@ export default function SignupScreen() {
                   value={firstName}
                   onChangeText={setFirstName}
                   placeholder="First name"
+                  placeholderTextColor="#6b7280"
                   autoCapitalize="words"
                 />
               </View>
@@ -123,6 +124,7 @@ export default function SignupScreen() {
                   value={lastName}
                   onChangeText={setLastName}
                   placeholder="Last name"
+                  placeholderTextColor="#6b7280"
                   autoCapitalize="words"
                 />
               </View>
@@ -135,6 +137,7 @@ export default function SignupScreen() {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Enter your email"
+                placeholderTextColor="#6b7280"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -148,6 +151,7 @@ export default function SignupScreen() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Create a password"
+                placeholderTextColor="#6b7280"
                 secureTextEntry
                 autoCapitalize="none"
               />
@@ -160,6 +164,7 @@ export default function SignupScreen() {
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="Confirm your password"
+                placeholderTextColor="#6b7280"
                 secureTextEntry
                 autoCapitalize="none"
               />
