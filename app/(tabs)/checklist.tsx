@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,11 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Animated,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { MessageCircle, Send, Bot } from 'lucide-react-native';
 
@@ -29,6 +33,53 @@ export default function ChatbotScreen() {
   ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  
+  // Animated values for typing dots
+  const dot1Opacity = useRef(new Animated.Value(0.3)).current;
+  const dot2Opacity = useRef(new Animated.Value(0.3)).current;
+  const dot3Opacity = useRef(new Animated.Value(0.3)).current;
+
+  // Animation effect for typing dots
+  useEffect(() => {
+    if (isTyping) {
+      const createAnimation = (dot: Animated.Value, delay: number) => {
+        return Animated.loop(
+          Animated.sequence([
+            Animated.timing(dot, {
+              toValue: 1,
+              duration: 800,
+              delay,
+              useNativeDriver: true,
+            }),
+            Animated.timing(dot, {
+              toValue: 0.3,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+          ])
+        );
+      };
+
+      const animation1 = createAnimation(dot1Opacity, 0);
+      const animation2 = createAnimation(dot2Opacity, 300);
+      const animation3 = createAnimation(dot3Opacity, 600);
+
+      animation1.start();
+      animation2.start();
+      animation3.start();
+
+      return () => {
+        animation1.stop();
+        animation2.stop();
+        animation3.stop();
+      };
+    } else {
+      // Reset dots when not typing
+      dot1Opacity.setValue(0.3);
+      dot2Opacity.setValue(0.3);
+      dot3Opacity.setValue(0.3);
+    }
+  }, [isTyping, dot1Opacity, dot2Opacity, dot3Opacity]);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
@@ -44,17 +95,17 @@ export default function ChatbotScreen() {
     setInputText('');
     setIsTyping(true);
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: getBotResponse(inputText.trim()),
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, botResponse]);
-      setIsTyping(false);
-    }, 1000);
+    // Add longer typing delay for more realistic feel
+    await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000)); // 2-4 seconds
+
+    const botResponse: Message = {
+      id: (Date.now() + 1).toString(),
+      text: getBotResponse(inputText.trim()),
+      isUser: false,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, botResponse]);
+    setIsTyping(false);
   };
 
   const getBotResponse = (userInput: string): string => {
@@ -81,20 +132,31 @@ export default function ChatbotScreen() {
 
   const renderMessage = (message: Message) => (
     <View key={message.id} style={[styles.messageContainer, message.isUser ? styles.userMessage : styles.botMessage]}>
+      <Text style={[styles.senderName, message.isUser ? styles.userSenderName : styles.botSenderName]}>
+        {message.isUser ? 'You' : 'ReadyBot'}
+      </Text>
       <View style={[styles.messageBubble, message.isUser ? styles.userBubble : styles.botBubble]}>
         <Text style={[styles.messageText, message.isUser ? styles.userText : styles.botText]}>
           {message.text}
-              </Text>
-            </View>
+        </Text>
       </View>
-    );
+    </View>
+  );
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={['#354eab', '#a8bafe']}
+      style={styles.gradientContainer}
+    >
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+      >
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Bot size={24} color="#354eab" />
-          <Text style={styles.title}>Emergency Assistant</Text>
+          <Bot size={24} color="#ffffff" />
+          <Text style={styles.title}>ReadyBot</Text>
         </View>
         {currentHousehold && (
           <Text style={styles.householdName}>{currentHousehold.name}</Text>
@@ -105,12 +167,23 @@ export default function ChatbotScreen() {
         style={styles.messagesContainer}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.messagesContent}
+        keyboardShouldPersistTaps="handled"
       >
         {messages.map(renderMessage)}
         {isTyping && (
           <View style={[styles.messageContainer, styles.botMessage]}>
+            <Text style={[styles.senderName, styles.botSenderName]}>
+              ReadyBot
+            </Text>
             <View style={[styles.messageBubble, styles.botBubble]}>
-              <Text style={[styles.messageText, styles.botText]}>Typing...</Text>
+              <View style={styles.typingContainer}>
+                <Text style={[styles.messageText, styles.botText, styles.typingText]}>ReadyBot is typing</Text>
+                <View style={styles.typingDots}>
+                  <Animated.Text style={[styles.typingDot, { opacity: dot1Opacity }]}>.</Animated.Text>
+                  <Animated.Text style={[styles.typingDot, { opacity: dot2Opacity }]}>.</Animated.Text>
+                  <Animated.Text style={[styles.typingDot, { opacity: dot3Opacity }]}>.</Animated.Text>
+                </View>
+              </View>
             </View>
           </View>
         )}
@@ -121,9 +194,12 @@ export default function ChatbotScreen() {
           style={styles.textInput}
           value={inputText}
           onChangeText={setInputText}
-          placeholder="Ask about emergency preparedness..."
+          placeholder="Ask me something!"
+          placeholderTextColor="#6b7280"
           multiline
           maxLength={500}
+          returnKeyType="send"
+          onSubmitEditing={handleSendMessage}
         />
         <TouchableOpacity 
           style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
@@ -133,14 +209,18 @@ export default function ChatbotScreen() {
           <Send size={20} color="#ffffff" />
         </TouchableOpacity>
       </View>
-    </View>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  gradientContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: 'transparent',
   },
   header: {
     paddingHorizontal: 24,
@@ -157,12 +237,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: '#ffffff',
     marginLeft: 8,
   },
   householdName: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#ffffff',
   },
   messagesContainer: {
     flex: 1,
@@ -173,6 +253,20 @@ const styles = StyleSheet.create({
   },
   messageContainer: {
     marginBottom: 16,
+  },
+  senderName: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 4,
+    marginHorizontal: 4,
+  },
+  userSenderName: {
+    color: '#354eab',
+    textAlign: 'right',
+  },
+  botSenderName: {
+    color: '#ffffff',
+    textAlign: 'left',
   },
   userMessage: {
     alignItems: 'flex-end',
@@ -191,9 +285,9 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   botBubble: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'rgba(255, 255, 255, 0.97)',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#354eab',
     borderBottomLeftRadius: 4,
   },
   messageText: {
@@ -204,16 +298,18 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   botText: {
-    color: '#1f2937',
+    color: '#354eab',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
+    paddingBottom: Platform.OS === 'ios' ? 8 : 12,
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
+    minHeight: 56,
   },
   textInput: {
     flex: 1,
@@ -237,5 +333,21 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#9ca3af',
+  },
+  typingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  typingText: {
+    fontStyle: 'italic',
+  },
+  typingDots: {
+    flexDirection: 'row',
+    marginLeft: 4,
+  },
+  typingDot: {
+    fontSize: 16,
+    color: '#6b7280',
+    marginHorizontal: 1,
   },
 });
