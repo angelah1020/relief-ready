@@ -13,7 +13,13 @@ export default function RootLayout() {
   useFrameworkReady();
 
   useEffect(() => {
-    return () => {};
+    // Force navigation test after 1 seconds
+    const timer = setTimeout(() => {
+      // console.log('RootLayout - Force navigation to login');
+      router.replace('/auth/login');
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (

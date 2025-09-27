@@ -107,6 +107,16 @@ export default function DashboardScreen() {
     setSelectedDisaster(null);
   };
 
+  const handleViewChecklist = (hazardType: string) => {
+    setModalVisible(false);
+    router.push({
+      pathname: '/checklist-detail',
+      params: { 
+        hazardType
+      }
+    });
+  };
+
   const renderDonut = (data: DonutData) => {
     const { icon: Icon, label, color, readiness_percentage } = data;
     
@@ -197,6 +207,7 @@ export default function DashboardScreen() {
           onClose={handleCloseModal}
           hazardType={selectedDisaster.type}
           readinessPercentage={selectedDisaster.percentage}
+          onViewChecklist={handleViewChecklist}
         />
       )}
     </ScrollView>

@@ -474,6 +474,16 @@ export default function CreateHouseholdScreen() {
 
       if (donutError) throw donutError;
 
+      // Generate all checklists in batch (much faster than individual calls)
+      try {
+        const { generateAllChecklists } = await import('@/lib/checklist');
+        await generateAllChecklists(household.id);
+        console.log('All checklists generated successfully');
+      } catch (checklistError) {
+        console.error('Failed to generate checklists:', checklistError);
+        // Don't fail the entire process if checklist generation fails
+      }
+
       Alert.alert('Success', 'Household created successfully!', [
         {
           text: 'OK',

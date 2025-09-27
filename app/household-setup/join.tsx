@@ -113,6 +113,16 @@ export default function JoinHouseholdScreen() {
 
       if (memberError) throw memberError;
 
+      // Regenerate all checklists since household composition changed
+      try {
+        const { generateAllChecklists } = await import('@/lib/checklist');
+        await generateAllChecklists(invite.household_id);
+        console.log('Checklists regenerated after member join');
+      } catch (checklistError) {
+        console.error('Failed to regenerate checklists:', checklistError);
+        // Don't fail the join process if checklist generation fails
+      }
+
       // Mark invite as used
       const { error: useError } = await supabase
         .from('invites')
