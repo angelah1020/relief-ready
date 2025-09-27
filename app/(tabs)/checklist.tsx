@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   botBubble: {
-    backgroundColor: 'rgba(255, 255, 255, 0.97)',
+    backgroundColor: 'rgba(255, 255, 255, 0.90)',
     borderWidth: 1,
     borderColor: '#354eab',
     borderBottomLeftRadius: 4,
