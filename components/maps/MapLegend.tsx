@@ -73,20 +73,28 @@ export default function MapLegend() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🔥 Wildfires</Text>
         <View style={styles.legendRow}>
-          <View style={[styles.colorBox, { backgroundColor: '#8B0000' }]} />
-          <Text style={styles.legendText}>Extreme</Text>
-        </View>
-        <View style={styles.legendRow}>
           <View style={[styles.colorBox, { backgroundColor: '#FF0000' }]} />
-          <Text style={styles.legendText}>High</Text>
+          <Text style={styles.legendText}>Uncontained</Text>
         </View>
         <View style={styles.legendRow}>
-          <View style={[styles.colorBox, { backgroundColor: '#FF4500' }]} />
-          <Text style={styles.legendText}>Moderate</Text>
+          <View style={[styles.colorBox, { backgroundColor: '#FFA500' }]} />
+          <Text style={styles.legendText}>Partially Contained</Text>
         </View>
         <View style={styles.legendRow}>
-          <View style={[styles.colorBox, { backgroundColor: '#FF8C00' }]} />
-          <Text style={styles.legendText}>Low</Text>
+          <View style={[styles.colorBox, { backgroundColor: '#FFFF00' }]} />
+          <Text style={styles.legendText}>Half Contained</Text>
+        </View>
+        <View style={styles.legendRow}>
+          <View style={[styles.colorBox, { backgroundColor: '#90EE90' }]} />
+          <Text style={styles.legendText}>Mostly Contained</Text>
+        </View>
+        <View style={styles.legendRow}>
+          <View style={[styles.colorBox, { backgroundColor: '#00FF00' }]} />
+          <Text style={styles.legendText}>Fully Contained</Text>
+        </View>
+        <View style={styles.legendRow}>
+          <View style={[styles.colorBox, { backgroundColor: '#808080' }]} />
+          <Text style={styles.legendText}>Fire Out</Text>
         </View>
       </View>
 
@@ -120,27 +128,7 @@ export default function MapLegend() {
         <Text style={styles.sectionTitle}>🏠 Shelters</Text>
         <View style={styles.legendRow}>
           <Text style={styles.emojiIcon}>🏠</Text>
-          <Text style={styles.legendText}>Open</Text>
-        </View>
-        <View style={styles.legendRow}>
-          <Text style={styles.emojiIcon}>🚨</Text>
-          <Text style={styles.legendText}>Alert</Text>
-        </View>
-        <View style={styles.legendRow}>
-          <Text style={styles.emojiIcon}>⏸️</Text>
-          <Text style={styles.legendText}>Standby</Text>
-        </View>
-        <View style={styles.legendRow}>
-          <Text style={styles.emojiIcon}>🏘️</Text>
-          <Text style={styles.legendText}>Limited</Text>
-        </View>
-        <View style={styles.legendRow}>
-          <Text style={styles.emojiIcon}>🏢</Text>
-          <Text style={styles.legendText}>Full</Text>
-        </View>
-        <View style={styles.legendRow}>
-          <Text style={styles.emojiIcon}>🚫</Text>
-          <Text style={styles.legendText}>Closed</Text>
+          <Text style={styles.legendText}>Open Emergency Shelters</Text>
         </View>
       </View>
     </View>

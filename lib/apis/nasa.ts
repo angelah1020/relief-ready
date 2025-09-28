@@ -146,23 +146,23 @@ class NASAApi {
    * Filters out small fires, controlled burns, and low-confidence detections
    */
   private isSignificantWildfire(fire: NASAFireHotspot): boolean {
-    // Filter criteria for actual wildfires:
+    // Filter criteria for actual significant wildfires only:
     
-    // 1. High Fire Radiative Power (FRP) - indicates significant fire intensity
-    if (fire.frp < 5) return false; // FRP < 5 MW typically indicates small fires
+    // 1. High Fire Radiative Power (FRP) - indicates significant wildfire intensity
+    if (fire.frp < 10) return false; // FRP < 10 MW filters out small fires and controlled burns
     
-    // 2. High brightness temperature - indicates substantial fire
-    if (fire.brightness < 310) return false; // Lower brightness may indicate controlled burns
+    // 2. High brightness temperature - indicates substantial wildfire
+    if (fire.brightness < 320) return false; // Higher brightness for actual wildfires (was 310K)
     
-    // 3. Reasonable confidence level (exclude very low confidence detections)
-    if (fire.confidence < 30) return false; // Very low confidence detections
+    // 3. High confidence level (exclude low confidence detections)
+    if (fire.confidence < 50) return false; // Higher confidence for wildfire accuracy (was 30)
     
     // 4. Exclude obvious non-wildfire detections based on scan/track values
     // Very small scan/track values might indicate industrial sources
-    if (fire.scan < 0.3 || fire.track < 0.3) return false;
+    if (fire.scan < 0.4 || fire.track < 0.4) return false; // Stricter scan/track filtering
     
-    // 5. Prefer daytime detections for better accuracy (optional - can be removed)
-    // if (fire.daynight === 'N') return false; // Uncomment to show only daytime fires
+    // 5. Prefer daytime detections for better wildfire accuracy
+    if (fire.daynight === 'N') return false; // Only show daytime detections for wildfires
     
     return true;
   }
