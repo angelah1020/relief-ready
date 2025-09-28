@@ -29,25 +29,69 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // Get user's account
-      const { data: account } = await supabase
+      const { data: account, error: accountError } = await supabase
         .from('accounts')
-        .select('id')
+        .select('id, email, display_name')
         .eq('user_id', user.id)
         .single();
 
+      let accountId = account?.id;
+
+      // If no account found, create one (this should rarely happen with the trigger)
       if (!account) {
-        setLoading(false);
-        return;
+        
+        try {
+          const { data: newAccount, error: createError } = await supabase
+            .from('accounts')
+            .insert({
+              user_id: user.id,
+              email: user.email || '',
+              display_name: user.email || 'User',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+          if (newAccount) {
+            accountId = newAccount.id;
+          } else {
+            setHouseholds([]);
+            setLoading(false);
+            return;
+          }
+        } catch (createError) {
+          console.error('HouseholdContext: Error creating account:', createError);
+          setHouseholds([]);
+          setLoading(false);
+          return;
+        }
       }
 
-      // Get households user is member of
-      const { data: memberships } = await supabase
+      // Get households user is member of - try account_id first, then user_id as fallback
+      let { data: memberships, error: membershipError } = await supabase
         .from('memberships')
         .select(`
           household_id,
           households (*)
         `)
-        .eq('account_id', account.id);
+        .eq('account_id', accountId);
+
+      // If no memberships found with account_id, try with user_id directly (legacy support)
+      if (!memberships || memberships.length === 0) {
+        const { data: directMemberships, error: directError } = await supabase
+          .from('memberships')
+          .select(`
+            household_id,
+            households (*)
+          `)
+          .eq('account_id', user.id);
+
+        if (directMemberships && directMemberships.length > 0) {
+          memberships = directMemberships;
+          membershipError = directError;
+        }
+      }
 
       if (memberships) {
         const householdList = memberships.map(m => m.households).filter(Boolean) as unknown as Tables<'households'>[];
@@ -87,9 +131,12 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
         if (!currentHousehold && updatedHouseholds.length > 0) {
           setCurrentHousehold(updatedHouseholds[0]);
         }
+      } else {
+        setHouseholds([]);
       }
     } catch (error) {
       console.error('Error fetching households:', error);
+      setHouseholds([]);
     } finally {
       setLoading(false);
     }

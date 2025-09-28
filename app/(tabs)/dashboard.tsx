@@ -50,7 +50,7 @@ const hazardConfig: Record<string, { icon: any; label: string; color: string }> 
 export default function DashboardScreen() {
   const router = useRouter();
   const { currentHousehold, households, loading: householdLoading } = useHousehold();
-  const { user, isNewUser, clearNewUserFlag } = useAuth();
+  const { user } = useAuth();
   const { disasterData, loading: mapLoading } = useMap();
   const [donutData, setDonutData] = useState<DonutData[]>([]);
   const [nextBestActions, setNextBestActions] = useState<Tables<'nba_actions'>[]>([]);
@@ -59,23 +59,20 @@ export default function DashboardScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [activeAlert, setActiveAlert] = useState<any>(null);
 
-  // Handle new user routing
+  // Handle user routing based on household count
   useEffect(() => {
-    if (!householdLoading && user) {
-      if (isNewUser) {
-        // New user should go to household setup index to choose
-        clearNewUserFlag();
-        router.replace('/household-setup');
-        return;
-      }
-      
-      if (households.length === 0) {
-        // Existing user with no households should choose to create or join
-        router.replace('/household-setup');
-        return;
-      }
+    // Only redirect if we're sure the loading is complete and user truly has no households
+    if (!householdLoading && user && households.length === 0) {
+      // Double-check: wait a bit more to be absolutely sure
+      const timeoutId = setTimeout(() => {
+        if (!householdLoading && user && households.length === 0) {
+          router.replace('/household-setup');
+        }
+      }, 1000); // 1 second delay to be extra sure
+
+      return () => clearTimeout(timeoutId);
     }
-  }, [user, isNewUser, households, householdLoading]);
+  }, [user, households, householdLoading]);
 
   useEffect(() => {
     if (currentHousehold) {

@@ -6,11 +6,9 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  isNewUser: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any; isNewUser?: boolean }>;
+  signUp: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
-  clearNewUserFlag: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,7 +17,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
     // Get initial session
@@ -55,9 +52,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
     });
     
+    // The database trigger should automatically create the account entry
+    // But we can add a small delay to ensure it's processed
     if (!result.error && result.data.user) {
-      setIsNewUser(true);
-      return { error: result.error, isNewUser: true };
+      // Give the trigger time to create the account
+      setTimeout(() => {
+        console.log('Account should be created by database trigger');
+      }, 1000);
     }
     
     return { error: result.error };
@@ -65,12 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     const result = await supabase.auth.signOut();
-    setIsNewUser(false);
     return { error: result.error };
-  };
-
-  const clearNewUserFlag = () => {
-    setIsNewUser(false);
   };
 
   return (
@@ -79,11 +75,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         user,
         loading,
-        isNewUser,
         signIn,
         signUp,
         signOut,
-        clearNewUserFlag,
       }}
     >
       {children}

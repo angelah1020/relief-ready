@@ -311,6 +311,7 @@ export default function CreateHouseholdScreen() {
   const [members, setMembers] = useState<Member[]>([]);
   const [inviteEmails, setInviteEmails] = useState<string[]>(['']);
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Creating household...');
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
   const [showAddMember, setShowAddMember] = useState(false);
@@ -334,7 +335,7 @@ export default function CreateHouseholdScreen() {
   });
   
   const router = useRouter();
-  const { user, clearNewUserFlag } = useAuth();
+  const { user } = useAuth();
   const { refreshHouseholds } = useHousehold();
 
   // Filter countries based on search
@@ -406,15 +407,14 @@ export default function CreateHouseholdScreen() {
       return;
     }
 
-    if (!user) {
-      Alert.alert('Error', 'You must be logged in to create a household');
-      return;
-    }
-
     setLoading(true);
-
+    setLoadingMessage('Creating household...');
+    
     try {
-      // Create or update account profile
+      if (!user) {
+        Alert.alert('Error', 'You must be logged in to create a household');
+        return;
+      }
       const { data: existingAccount } = await supabase
         .from('accounts')
         .select('id')
@@ -534,26 +534,27 @@ export default function CreateHouseholdScreen() {
 
       if (donutError) throw donutError;
 
-      // Generate all checklists in batch (much faster than individual calls)
-      try {
-        const { generateAllChecklists } = await import('@/lib/checklist');
-        await generateAllChecklists(household.id);
-        console.log('All checklists generated successfully');
-      } catch (checklistError) {
-        console.error('Failed to generate checklists:', checklistError);
-        // Don't fail the entire process if checklist generation fails
-      }
-
-      Alert.alert('Success', 'Household created successfully!', [
+      // Show success immediately, generate checklists in background
+      Alert.alert('Success', 'Household created successfully! Your emergency checklists are being generated in the background.', [
         {
           text: 'OK',
           onPress: async () => {
-            clearNewUserFlag();
             await refreshHouseholds();
             router.push('/(tabs)/dashboard');
           },
         },
       ]);
+
+      // Generate checklists in background (don't await)
+      setTimeout(async () => {
+        try {
+          const { generateAllChecklists } = await import('@/lib/checklist');
+          await generateAllChecklists(household.id);
+          console.log('Background checklist generation completed');
+        } catch (checklistError) {
+          console.error('Background checklist generation failed:', checklistError);
+        }
+      }, 100); // Small delay to let the UI update first
     } catch (error: any) {
       console.error('Error creating household:', error);
       Alert.alert('Error', error.message || 'Failed to create household');
@@ -922,7 +923,7 @@ export default function CreateHouseholdScreen() {
             disabled={loading}
           >
             <Text style={styles.buttonText}>
-              {loading ? 'Creating...' : 'Create Household'}
+              {loading ? loadingMessage : 'Create Household'}
             </Text>
           </TouchableOpacity>
         </View>
