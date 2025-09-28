@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }, 1000);
     }
     
-    return { error: result.error };
+    return { error: result.error, data: result.data };
   };
 
   const signOut = async () => {

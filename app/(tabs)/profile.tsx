@@ -990,7 +990,7 @@ export default function HouseholdScreen() {
             {profilePhoto ? (
               <Image source={{ uri: profilePhoto }} style={styles.profileImage} />
             ) : (
-              <Users size={32} color="#6B7280" />
+            <Users size={32} color="#6B7280" />
             )}
             {isUploadingPhoto && (
               <View style={styles.uploadingOverlay}>
@@ -1012,7 +1012,7 @@ export default function HouseholdScreen() {
       </View>
 
       {/* Household Management */}
-      <View style={styles.section}>
+        <View style={styles.section}>
         <Text style={styles.sectionTitle}>Household Management</Text>
         
         {/* Current & Switch Household */}
@@ -1028,9 +1028,9 @@ export default function HouseholdScreen() {
               </Text>
               {currentHousehold && (
                 <>
-                  <Text style={styles.householdLocation}>
-                    {currentHousehold.zip_code}, {currentHousehold.country}
-                  </Text>
+              <Text style={styles.householdLocation}>
+                {currentHousehold.zip_code}, {currentHousehold.country}
+              </Text>
                   <Text style={styles.householdJoinCode}>
                     Join Code: {currentHousehold.join_code}
                   </Text>
@@ -1052,39 +1052,39 @@ export default function HouseholdScreen() {
           {/* Household Dropdown List */}
           {showHouseholdDropdown && households.length > 1 && (
             <View style={styles.dropdownList}>
-              {households.map((household) => (
-                <TouchableOpacity
-                  key={household.id}
-                  style={[
+            {households.map((household) => (
+              <TouchableOpacity
+                key={household.id}
+                style={[
                     styles.dropdownItem,
                     currentHousehold?.id === household.id && styles.selectedDropdownItem
-                  ]}
+                ]}
                   onPress={() => {
                     handleSwitchHousehold(household.id);
                     setShowHouseholdDropdown(false);
                   }}
-                >
+              >
                   <Home 
                     size={20} 
                     color={currentHousehold?.id === household.id ? colors.buttonSecondary : "#6B7280"} 
                   />
-                  <View style={styles.householdInfo}>
-                    <Text style={[
-                      styles.householdName,
+                <View style={styles.householdInfo}>
+                  <Text style={[
+                    styles.householdName,
                       currentHousehold?.id === household.id && { color: colors.buttonSecondary }
-                    ]}>
-                      {household.name}
-                    </Text>
-                    <Text style={styles.householdLocation}>
-                      {household.zip_code}, {household.country}
-                    </Text>
-                  </View>
-                  {currentHousehold?.id === household.id && (
+                  ]}>
+                    {household.name}
+                  </Text>
+                  <Text style={styles.householdLocation}>
+                    {household.zip_code}, {household.country}
+                  </Text>
+                </View>
+                {currentHousehold?.id === household.id && (
                     <Check size={20} color={colors.buttonSecondary} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
           )}
         </View>
       </View>
@@ -1350,11 +1350,10 @@ export default function HouseholdScreen() {
 
       {/* Location Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Emergency Location</Text>
+        <Text style={styles.sectionTitle}>Household Location</Text>
         <View style={styles.locationCard}>
           <View style={styles.locationHeader}>
             <View>
-              <Text style={styles.locationTitle}>Your Location</Text>
               <Text style={styles.locationSubtitle}>
                 {currentHousehold?.zip_code}, {currentHousehold?.country}
               </Text>
@@ -1404,7 +1403,7 @@ export default function HouseholdScreen() {
               >
                 <UserMinus size={20} color="#F59E0B" />
                 <Text style={[styles.actionText, styles.leaveActionText]}>Leave Household</Text>
-              </TouchableOpacity>
+          </TouchableOpacity>
 
               <TouchableOpacity 
                 style={[styles.actionItem, styles.deleteAction]} 
@@ -2082,7 +2081,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   header: {
     paddingHorizontal: 24,
@@ -2092,7 +2091,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: colors.primary,
   },
   loadingContainer: {
     flex: 1,

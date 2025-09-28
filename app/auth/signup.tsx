@@ -15,6 +15,7 @@ import { useRouter, Link } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Shield, Camera, User } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { supabase } from '@/lib/supabase';
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
@@ -25,7 +26,7 @@ export default function SignupScreen() {
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
-  const { signUp } = useAuth();
+  const { signUp, user } = useAuth();
   const router = useRouter();
 
   const handleImagePicker = async () => {
@@ -65,22 +66,121 @@ export default function SignupScreen() {
     }
 
     setLoading(true);
-    const { error } = await signUp(email, password);
+    const { error, data } = await signUp(email, password);
     
     if (error) {
       Alert.alert('Error', error.message);
-    } else {
-      Alert.alert(
-        'Welcome to Relief Ready!', 
-        'Account created successfully! Let\'s set up your household.',
-        [
-          {
-            text: 'Get Started',
-            onPress: () => router.replace('/household-setup'),
-          },
-        ]
-      );
+      setLoading(false);
+      return;
     }
+
+    // Get the user from the signup result
+    const signupUser = data?.user;
+    if (!signupUser) {
+      Alert.alert('Error', 'Account created but user data not available');
+      setLoading(false);
+      return;
+    }
+
+      // Wait a moment for the user to be available in context
+      setTimeout(async () => {
+        console.log('Attempting to create account record...');
+        console.log('User available:', !!signupUser);
+        console.log('First name:', firstName);
+        console.log('Profile photo:', !!profilePhoto);
+        
+        if (signupUser) {
+          try {
+            // Convert profile photo to base64 if provided
+            let photoUrl = null;
+            if (profilePhoto) {
+              console.log('Converting profile photo to base64...');
+              const response = await fetch(profilePhoto);
+              const blob = await response.blob();
+              const reader = new FileReader();
+              photoUrl = await new Promise((resolve) => {
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+              });
+              console.log('Photo converted, length:', photoUrl?.length);
+            }
+
+            // Check if account already exists
+            const { data: existingAccount, error: fetchError } = await supabase
+              .from('accounts')
+              .select('*')
+              .eq('user_id', signupUser.id)
+              .single();
+
+            console.log('Existing account:', existingAccount);
+            console.log('Fetch error:', fetchError);
+
+            if (existingAccount) {
+              // Update existing account
+              console.log('Updating existing account...');
+              const { error: updateError } = await supabase
+                .from('accounts')
+                .update({
+                  display_name: firstName,
+                  photo_url: photoUrl,
+                })
+                .eq('user_id', signupUser.id);
+
+              if (updateError) {
+                console.error('Error updating account:', updateError);
+                Alert.alert('Warning', 'Account created but profile data could not be updated. You can update it later in your profile.');
+              } else {
+                console.log('Account updated successfully');
+              }
+            } else {
+              // Create new account
+              console.log('Creating new account...');
+              const { error: insertError } = await supabase
+                .from('accounts')
+                .insert({
+                  user_id: signupUser.id,
+                  display_name: firstName,
+                  photo_url: photoUrl,
+                });
+
+              if (insertError) {
+                console.error('Error creating account:', insertError);
+                Alert.alert('Warning', 'Account created but profile data could not be saved. You can update it later in your profile.');
+              } else {
+                console.log('Account created successfully');
+              }
+            }
+
+            // Verify the account was created/updated
+            const { data: verifyAccount, error: verifyError } = await supabase
+              .from('accounts')
+              .select('*')
+              .eq('user_id', signupUser.id)
+              .single();
+
+            console.log('Verification - Account exists:', !!verifyAccount);
+            console.log('Verification - Display name:', verifyAccount?.display_name);
+            console.log('Verification - Photo URL length:', verifyAccount?.photo_url?.length);
+          } catch (error) {
+            console.error('Error processing profile data:', error);
+            Alert.alert('Warning', 'Account created but profile data could not be saved. You can update it later in your profile.');
+          }
+        } else {
+          console.error('User not available after signup');
+          Alert.alert('Warning', 'Account created but profile data could not be saved. You can update it later in your profile.');
+        }
+      }, 2000); // Increased delay to 2 seconds
+
+    Alert.alert(
+      'Welcome to Relief Ready!', 
+      'Account created successfully! Let\'s set up your household.',
+      [
+        {
+          text: 'Get Started',
+          onPress: () => router.replace('/household-setup'),
+        },
+      ]
+    );
     setLoading(false);
   };
 
