@@ -59,6 +59,7 @@ export default function DashboardScreen() {
   const [selectedDisaster, setSelectedDisaster] = useState<{ type: string; percentage: number } | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [activeAlert, setActiveAlert] = useState<any>(null);
+  const [userAccount, setUserAccount] = useState<Tables<'accounts'> | null>(null);
 
   // Handle user routing based on household count
   useEffect(() => {
@@ -75,6 +76,25 @@ export default function DashboardScreen() {
     }
   }, [user, households, householdLoading]);
 
+  // Fetch user account data
+  useEffect(() => {
+    const fetchUserAccount = async () => {
+      if (user) {
+        const { data: account, error } = await supabase
+          .from('accounts')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (account && !error) {
+          setUserAccount(account);
+        }
+      }
+    };
+
+    fetchUserAccount();
+  }, [user]);
+
   useEffect(() => {
     if (currentHousehold) {
       fetchDashboardData();
@@ -87,7 +107,22 @@ export default function DashboardScreen() {
       if (currentHousehold) {
         fetchDashboardData();
       }
-    }, [currentHousehold])
+      // Also refresh user account data when screen comes into focus
+      if (user) {
+        const fetchUserAccount = async () => {
+          const { data: account, error } = await supabase
+            .from('accounts')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (account && !error) {
+            setUserAccount(account);
+          }
+        };
+        fetchUserAccount();
+      }
+    }, [currentHousehold, user])
   );
 
   useEffect(() => {
@@ -269,7 +304,9 @@ export default function DashboardScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Dashboard</Text>
+          <Text style={styles.title}>
+            Hi there, <Text style={styles.userName}>{userAccount?.display_name || 'User'}!</Text>
+          </Text>
         </View>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Loading...</Text>
@@ -281,7 +318,9 @@ export default function DashboardScreen() {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <Text style={styles.title}>Dashboard</Text>
+        <Text style={styles.title}>
+          Hi there, <Text style={styles.userName}>{userAccount?.display_name || 'User'}!</Text>
+        </Text>
         {currentHousehold && (
           <Text style={styles.householdName}>{currentHousehold.name}</Text>
         )}
@@ -379,8 +418,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: colors.primary,
+    color: colors.primary, // "Hi there," part is primary color
     marginBottom: 4,
+  },
+  userName: {
+    color: colors.lightBlue, // Name part is secondary color
   },
   householdName: {
     fontSize: 16,
@@ -541,12 +583,12 @@ const styles = StyleSheet.create({
   readinessAccent: {
     width: 40,
     height: 3,
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.lightBlue,
     borderRadius: 2,
   },
   readinessSubtitle: {
     fontSize: 16,
-    color: colors.secondary,
+    color: colors.lightBlue,
     marginBottom: 20,
     fontStyle: 'italic',
   },

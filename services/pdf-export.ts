@@ -521,7 +521,7 @@ export class PDFExportService {
                     <div class="info-value">${householdData.name}</div>
                 </div>
                 <div class="info-item">
-                    <div class="info-label">Location</div>
+                    <div class="info-label">Household Location</div>
                     <div class="info-value">${householdData.country} ${householdData.postalCode}</div>
                 </div>
                 <div class="info-item">
@@ -654,13 +654,13 @@ export class PDFExportService {
         <div class="section-title">Current Situation & Resources</div>
         <div class="map-section">
             <div class="info-item" style="margin-bottom: 20px;">
-                <div class="info-label">Location</div>
+                <div class="info-label">Household Location</div>
                 <div class="info-value">${mapData.center.latitude.toFixed(4)}, ${mapData.center.longitude.toFixed(4)}</div>
             </div>
             
             ${mapData.mapImageUri ? `
                 <div style="text-align: center; margin: 20px 0;">
-                    <div class="info-label" style="margin-bottom: 12px;">Location Map</div>
+                    <div class="info-label" style="margin-bottom: 12px;">Household Location Map</div>
                     <img src="data:image/png;base64,${mapData.mapImageUri}" alt="Household Location Map" class="map-image" />
                     <div style="font-size: 12px; color: #666; margin-top: 8px;">
                         Map image length: ${mapData.mapImageUri.length} characters
@@ -668,7 +668,7 @@ export class PDFExportService {
                 </div>
             ` : `
                 <div style="text-align: center; margin: 20px 0; padding: 20px; background: #f3f4f6; border-radius: 8px;">
-                    <div class="info-label" style="margin-bottom: 12px;">Location Map</div>
+                    <div class="info-label" style="margin-bottom: 12px;">Household Location Map</div>
                     <div style="color: #666;">Map screenshot not available</div>
                 </div>
             `}
