@@ -16,6 +16,7 @@ import {
   generateChecklist,
   type ChecklistItem
 } from '@/lib/checklist'
+import { getChecklistSummary } from '@/lib/inventory-processing'
 import { 
   ArrowLeft, 
   Package, 
@@ -108,11 +109,23 @@ const itemCategoryMap: Record<string, string> = {
   'pet_medications': 'Pets',
 }
 
+interface ChecklistSummaryItem {
+  household_id: string;
+  hazard_type: string;
+  item_key: string;
+  quantity_needed: number;
+  unit: string;
+  quantity_have: number;
+  fulfillment_percentage: number;
+  is_fulfilled: boolean;
+}
+
 export default function ChecklistDetailScreen() {
   const router = useRouter()
   const { hazardType } = useLocalSearchParams<{ hazardType: string }>()
   const { currentHousehold } = useHousehold()
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([])
+  const [checklistSummary, setChecklistSummary] = useState<ChecklistSummaryItem[]>([])
   const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
@@ -131,10 +144,15 @@ export default function ChecklistDetailScreen() {
       
       console.log('Loading checklist for:', { householdId: currentHousehold.id, hazardType })
       
-      const items = await getChecklistItems(currentHousehold.id, hazardType)
+      const [items, summary] = await Promise.all([
+        getChecklistItems(currentHousehold.id, hazardType),
+        getChecklistSummary(currentHousehold.id, hazardType)
+      ])
       console.log('Checklist items loaded:', items)
+      console.log('Checklist summary loaded:', summary)
       
       setChecklistItems(items)
+      setChecklistSummary(summary)
       
     } catch (error: any) {
       console.error('Failed to load checklist:', error)
@@ -203,16 +221,45 @@ export default function ChecklistDetailScreen() {
       .join(' ')
   }
 
+  const getFulfillmentData = (itemKey: string): ChecklistSummaryItem | null => {
+    return checklistSummary.find(item => item.item_key === itemKey) || null
+  }
+
   const renderItem = (item: ChecklistItem) => {
+    const fulfillmentData = getFulfillmentData(item.item_key)
+    const quantityHave = fulfillmentData?.quantity_have || 0
+    const quantityNeeded = item.quantity_needed
+    const unit = item.unit
+    
     return (
       <View key={item.id || item.item_key} style={styles.itemCard}>
         <View style={styles.itemHeader}>
           <Text style={styles.itemName}>
             {getItemDisplayName(item.item_key)}
           </Text>
-          <Text style={styles.itemQuantity}>
-            {item.quantity_needed} {item.unit}
-          </Text>
+          <View style={styles.quantityContainer}>
+            <Text style={styles.itemQuantity}>
+              {quantityHave} / {quantityNeeded} {unit}
+            </Text>
+            {fulfillmentData && (
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[
+                      styles.progressFill, 
+                      { 
+                        width: `${Math.min(100, fulfillmentData.fulfillment_percentage)}%`,
+                        backgroundColor: fulfillmentData.is_fulfilled ? '#10B981' : '#F59E0B'
+                      }
+                    ]} 
+                  />
+                </View>
+                <Text style={styles.progressText}>
+                  {Math.round(fulfillmentData.fulfillment_percentage)}%
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
     )
@@ -488,6 +535,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+  },
+  quantityContainer: {
+    alignItems: 'flex-end',
+  },
+  progressContainer: {
+    marginTop: 4,
+    alignItems: 'flex-end',
+  },
+  progressBar: {
+    width: 80,
+    height: 4,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 10,
+    color: '#6b7280',
+    marginTop: 2,
   },
   backButtonText: {
     fontSize: 16,
