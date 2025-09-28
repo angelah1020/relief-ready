@@ -135,12 +135,11 @@ export default function InventoryScreen() {
       }));
 
       Alert.alert(
-        'AI Categorization',
-        `Item categorized as: ${result.category}\nConfidence: ${Math.round(result.confidence * 100)}%\n\nReasoning: ${result.reasoning}`,
+        'Item Categorized',
+        `Category: ${result.category}\nConfidence: ${Math.round(result.confidence * 100)}%`,
         [{ text: 'OK' }]
       );
     } catch (error) {
-      // Error categorizing item
       Alert.alert('Error', 'Failed to categorize item. Please try again.');
     } finally {
       setIsCategorizing(false);

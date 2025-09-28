@@ -7,7 +7,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string) => Promise<{ error: any; data?: any }>;
   signOut: () => Promise<{ error: any }>;
 }
 
@@ -51,15 +51,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
     });
-    
-    // The database trigger should automatically create the account entry
-    // But we can add a small delay to ensure it's processed
-    if (!result.error && result.data.user) {
-      // Give the trigger time to create the account
-      setTimeout(() => {
-        // Account should be created by database trigger
-      }, 1000);
-    }
     
     return { error: result.error, data: result.data };
   };

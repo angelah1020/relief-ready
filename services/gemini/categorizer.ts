@@ -64,14 +64,11 @@ export class InventoryCategorizer {
       
       const text = response.text || '';
       return this.parseCategorizationResponse(text);
-    } catch (error: any) {
-      // Error categorizing item
-      
-      // Return a default categorization for any error
+    } catch (error) {
       return {
         category: 'Other',
         confidence: 0.1,
-        reasoning: 'AI categorization failed'
+        reasoning: 'Categorization service unavailable'
       };
     }
   }
@@ -96,16 +93,13 @@ export class InventoryCategorizer {
       
       const text = response.text || '';
       return this.parseInventoryProcessingResponse(text);
-    } catch (error: any) {
-      // Error processing inventory item
-      
-      // Return a default processing result for any error
+    } catch (error) {
       return {
         canonical_key: 'non_perishable_food',
         canonical_quantity: 1,
         canonical_unit: 'meals',
         confidence: 0.1,
-        reasoning: 'AI processing failed'
+        reasoning: 'Processing service unavailable'
       };
     }
   }

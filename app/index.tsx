@@ -17,7 +17,7 @@ export default function IndexScreen() {
     // Do not navigate while the splash animation is still showing.
     if (showSplash) return;
 
-    // If there's no signed-in user, go straight to login as soon as splash completes.
+    // If there's no signed-in user, go to login
     if (!user) {
       router.replace('/auth/login');
       return;
@@ -30,6 +30,7 @@ export default function IndexScreen() {
 
     router.replace('/(tabs)/dashboard');
   }, [user, households, authLoading, householdLoading, showSplash]);
+
 
   const handleSplashComplete = async () => {
     // Hide the native splash once our custom animation is done to avoid a flicker
@@ -48,6 +49,7 @@ export default function IndexScreen() {
   if (showSplash) {
     return <SplashScreen onAnimationComplete={handleSplashComplete} />;
   }
+  
   // While the app finishes routing after splash, render nothing (navigation will take user
   // to login or dashboard). This avoids showing an intermediate 'taking too long' screen.
   return <></>;

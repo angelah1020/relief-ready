@@ -261,7 +261,6 @@ export default function HouseholdScreen() {
     try {
       setIsUploadingPhoto(true);
 
-      // Convert image to base64
       const response = await fetch(uri);
       const blob = await response.blob();
       const reader = new FileReader();
@@ -270,8 +269,6 @@ export default function HouseholdScreen() {
         try {
           const base64 = reader.result as string;
           
-          // For now, store the base64 data directly in the database
-          // This is a temporary solution until storage bucket is properly configured
           const { error: updateError } = await supabase
             .from('accounts')
             .update({ photo_url: base64 })
@@ -280,11 +277,9 @@ export default function HouseholdScreen() {
           if (updateError) throw updateError;
 
           setProfilePhoto(base64);
-          // Refresh members to show updated profile photo
           fetchMembers();
           Alert.alert('Success', 'Profile photo updated successfully!');
         } catch (error) {
-          // Error uploading photo
           Alert.alert('Error', 'Failed to upload photo');
         } finally {
           setIsUploadingPhoto(false);
@@ -293,7 +288,6 @@ export default function HouseholdScreen() {
 
       reader.readAsDataURL(blob);
     } catch (error) {
-      // Error processing photo
       Alert.alert('Error', 'Failed to process photo');
       setIsUploadingPhoto(false);
     }
@@ -704,58 +698,33 @@ export default function HouseholdScreen() {
 
                 // Delete household-related data for households being deleted
                 for (const householdId of householdsToDelete) {
-                  // Delete checklist items
                   await supabase.from('checklist_items').delete().eq('household_id', householdId);
-                  // Delete inventory items
                   await supabase.from('inventory_items').delete().eq('household_id', householdId);
-                  // Delete members
                   await supabase.from('members').delete().eq('household_id', householdId);
-                  // Delete pets
                   await supabase.from('pets').delete().eq('household_id', householdId);
-                  // Delete emergency contacts
                   await supabase.from('emergency_contacts').delete().eq('household_id', householdId);
-                  // Delete hazard configs
                   await supabase.from('hazard_configs').delete().eq('household_id', householdId);
-                  // Delete donut status
                   await supabase.from('donut_status').delete().eq('household_id', householdId);
-                  
-                  // Deleted data for household
                 }
 
-                // Remove user from all memberships
                 if (accountId) {
                   await supabase.from('memberships').delete().eq('account_id', accountId);
-                  // Removed all memberships
                 }
 
-                // Delete the empty households
                 for (const householdId of householdsToDelete) {
                   await supabase.from('households').delete().eq('id', householdId);
-                  // Deleted household
                 }
 
-                // Delete chat messages
                 await supabase.from('chat_messages').delete().eq('user_id', user.id);
-                // Deleted chat messages
-
-                // Unclaim members in other households
                 await supabase.from('members').update({ claimed_by: null }).eq('claimed_by', user.id);
-                // Unclaimed members
-
-                // Remove creator references from remaining households
                 await supabase.from('members').update({ created_by: null }).eq('created_by', user.id);
                 await supabase.from('households').update({ created_by: null }).eq('created_by', user.id);
-                // Removed creator references
 
-                // Delete account record
                 if (accountId) {
                   await supabase.from('accounts').delete().eq('id', accountId);
-                  // Deleted account record
                 }
 
-                // Successfully deleted all account data
               } catch (cleanupError) {
-                // Error during cleanup
                 Alert.alert('Error', 'Failed to delete some account data. Please try again.');
                 return;
               }
