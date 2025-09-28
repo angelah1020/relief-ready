@@ -269,8 +269,7 @@ Manage pending invitations you've sent to others to join your household. You can
       });
       
       return result.text || '';
-    } catch (error: any) {
-      // Error generating AI response
+    } catch (error) {
       return this.getFallbackResponse(userMessage, context);
     }
   }

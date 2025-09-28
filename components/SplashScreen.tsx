@@ -11,11 +11,12 @@ interface SplashScreenProps {
 
 export default function SplashScreen({ onAnimationComplete }: SplashScreenProps) {
   const fadeAnim = React.useRef(new Animated.Value(1)).current; // controls overall opacity during fade-out
-  const scaleAnim = React.useRef(new Animated.Value(0.6)).current; // start slightly smaller
+  const scaleAnim = React.useRef(new Animated.Value(0.8)).current; // start slightly smaller
   const logoFade = React.useRef(new Animated.Value(1)).current; // keep logo visible until fade-out
 
   React.useEffect(() => {
     let mounted = true;
+
 
     // Ensure native splash is hidden so our custom splash is visible
     ExpoSplash.hideAsync().catch(() => {});
@@ -23,15 +24,15 @@ export default function SplashScreen({ onAnimationComplete }: SplashScreenProps)
     // Expand the logo slowly, then hold, then fade out the whole view
     const expand = Animated.timing(scaleAnim, {
       toValue: 1.08,
-      duration: 1400,
+      duration: 1500, // Shorter expansion
       useNativeDriver: true,
     });
 
-    const hold = Animated.delay(600);
+    const hold = Animated.delay(1000); // Shorter hold time
 
     const fadeOut = Animated.timing(fadeAnim, {
       toValue: 0,
-      duration: 600,
+      duration: 500, // Shorter fade out
       useNativeDriver: true,
     });
 
@@ -69,7 +70,7 @@ export default function SplashScreen({ onAnimationComplete }: SplashScreenProps)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background, // White background
     alignItems: 'center',
     justifyContent: 'center',
   },

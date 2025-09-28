@@ -253,55 +253,38 @@ export async function getHouseholdPreparedness(householdId: string) {
  */
 function getCategoryFromCanonicalKey(canonicalKey: string): string {
   const categoryMap: Record<string, string> = {
-    // Water & Food
     'drinking_water': 'Water & Food',
     'non_perishable_food': 'Water & Food',
-    
-    // Medical & First Aid
     'first_aid_kit': 'Medical & First Aid',
     'prescription_medications': 'Medical & First Aid',
     'bandages': 'Medical & First Aid',
     'antiseptic': 'Medical & First Aid',
     'pain_relievers': 'Medical & First Aid',
-    
-    // Lighting & Power
     'flashlight': 'Lighting & Power',
     'batteries': 'Lighting & Power',
     'solar_charger': 'Lighting & Power',
     'candles': 'Lighting & Power',
-    
-    // Communication & Navigation
     'noaa_weather_radio': 'Communication & Navigation',
     'maps': 'Communication & Navigation',
     'whistle': 'Tools & Safety',
-    
-    // Shelter & Warmth
     'blankets': 'Shelter & Warmth',
     'sleeping_bags': 'Shelter & Warmth',
     'warm_clothing': 'Shelter & Warmth',
     'tent': 'Shelter & Warmth',
-    
-    // Sanitation & Hygiene
     'toilet_paper': 'Sanitation & Hygiene',
     'hygiene_supplies': 'Sanitation & Hygiene',
     'bleach': 'Sanitation & Hygiene',
     'plastic_bags': 'Sanitation & Hygiene',
     'bucket': 'Sanitation & Hygiene',
-    
-    // Tools & Safety
     'multi_tool': 'Tools & Safety',
     'duct_tape': 'Tools & Safety',
     'fire_extinguisher': 'Tools & Safety',
     'work_gloves': 'Tools & Safety',
     'can_opener': 'Tools & Safety',
-    
-    // Important Documents & Money
     'important_documents': 'Important Documents & Money',
     'cash': 'Important Documents & Money',
     'insurance_papers': 'Important Documents & Money',
     'identification': 'Important Documents & Money',
-    
-    // Pets
     'pet_carrier': 'Pets',
     'pet_leash': 'Pets',
     'pet_medications': 'Pets',

@@ -1,6 +1,6 @@
-# Relief Ready Application: AI Knowledge Base
+# Relief Ready Application: Knowledge Base
 
-## 🚀 About Relief Ready
+## About Relief Ready
 
 Relief Ready is a mobile application designed to help households prepare for natural disasters. Our mission is to provide a simple, intuitive, and personalized way for you to create, track, and manage your emergency preparedness plans and supplies. The app gives you a clear picture of your readiness level, provides actionable steps to improve it, and offers real-time alerts and information when a disaster strikes.
 
@@ -10,9 +10,9 @@ The app is built around five core features:
 - **Inventory**: Where you track all your emergency supplies
 - **Live Map**: A real-time view of active hazards and resources near you
 - **Household**: The hub for managing your family, pets, and home details
-- **AI Chatbot**: Your helpful assistant for navigating the app and answering questions
+- **Chatbot**: Your helpful assistant for navigating the app and answering questions
 
-## 🔑 Account and Household Management
+## Account and Household Management
 
 ### Account vs. Household vs. Member
 
@@ -41,11 +41,11 @@ It's important to understand the three main data structures in Relief Ready:
 - When you tap the link, the app will open. If you're not signed in, you'll do that first
 - The app validates the invite token and automatically links your account to the correct member profile within that household
 
-## 📊 Dashboard
+## Dashboard
 
 The Dashboard is your main screen, giving you a quick overview of your preparedness. It consists of three main components, arranged from top to bottom.
 
-### Hazard Donuts 🍩
+### Hazard Donuts
 
 This is a 2x3 grid of "donuts," where each donut represents your overall readiness percentage for a specific type of disaster. Tapping a donut takes you to the detailed Hazard Checklist for that disaster.
 
@@ -57,7 +57,7 @@ The app tracks the following hazards:
 - Tornado
 - Heat Wave
 
-### Hazard Checklist ✅
+### Hazard Checklist
 
 This is a full-screen detailed view showing the supplies you have versus what you need for a specific disaster.
 
@@ -70,11 +70,11 @@ This is a full-screen detailed view showing the supplies you have versus what yo
 
 **Categories**: Items are organized into logical categories like Food, Water, Medical & First Aid, Tools & Safety, and Important Documents.
 
-### Next Best Actions 👍
+### Next Best Actions
 
 These are 2-3 smart suggestion "chips" that highlight the easiest way to make the biggest improvement to your readiness scores. For example, a chip might say, "Add a first-aid kit (+6%)". Tapping it takes you directly to the inventory page to add that item.
 
-### Seasonal/Alert Card ⚠️
+### Seasonal/Alert Card
 
 This is a dynamic card with contextual information.
 
@@ -83,7 +83,7 @@ This is a dynamic card with contextual information.
 
 The card has two actions: "See on Map" (which opens the Live Map centered on the alert) and "Open Checklist".
 
-## 📦 Inventory
+## Inventory
 
 The Inventory page is a single place where you can add, update, and delete all your emergency supplies for your household.
 
@@ -91,7 +91,7 @@ The Inventory page is a single place where you can add, update, and delete all y
 
 **User Input**: You add items by entering a quantity, a unit (from a dropdown menu), and a free-text description (e.g., "24 bottles of water").
 
-**AI Categorization**: The app's AI then intelligently analyzes your input. It normalizes the data (e.g., converts "24 bottles of water" into a standard unit like Liters) and assigns it to the correct category.
+**Smart Categorization**: The app then intelligently analyzes your input. It normalizes the data (e.g., converts "24 bottles of water" into a standard unit like Liters) and assigns it to the correct category.
 
 **Display**: Your supplies are neatly organized into categories on the page, such as Water & Food, Medical & First Aid, Lighting & Power, etc.
 
@@ -115,7 +115,7 @@ The app automatically categorizes your supplies into these main categories:
 - **Pets**: Pet food, water, carriers, leashes, and animal supplies
 - **Other**: Items that don't fit into other categories
 
-## 🗺️ Live Map
+## Live Map
 
 The Live Map provides real-time situational awareness of natural hazards and important resources around your household's location.
 
@@ -136,9 +136,9 @@ The Live Map provides real-time situational awareness of natural hazards and imp
 
 **Data Freshness**: The map data refreshes automatically at set intervals (e.g., alerts every 3-5 minutes) to keep you up-to-date.
 
-## 🤖 AI Chatbot
+## Chatbot
 
-The AI Chatbot, powered by the Google Gemini API, is your friendly in-app assistant. You can ask it two main types of questions:
+The Chatbot, powered by the Google Gemini API, is your friendly in-app assistant. You can ask it two main types of questions:
 
 **App Navigation & "How-To" Questions**:
 - "How do I add my dog to my household?"
@@ -154,7 +154,7 @@ The chatbot can provide clear, step-by-step instructions for using any feature i
 
 The chatbot is equipped with general knowledge to help you stay safe and informed.
 
-## 🏡 Household Tab
+## Household Tab
 
 This section is where you manage all the details about your home, the people and pets who live there, and your overall emergency plan.
 
@@ -173,7 +173,7 @@ Set and edit key parts of your family's plan, including a safe Rally Point and y
 ### Invites & Roles
 Manage pending invitations you've sent to others to join your household. You can see who has been invited and resend or revoke invites.
 
-## 🔥 General Disaster Preparedness Information
+## General Disaster Preparedness Information
 
 Here is some general information about the disasters Relief Ready helps you prepare for.
 
@@ -219,12 +219,12 @@ Here is some general information about the disasters Relief Ready helps you prep
 
 **Core Actions**: Stay hydrated by drinking plenty of water. Stay indoors in air-conditioned spaces as much as possible. Know the locations of public cooling centers. Never leave children or pets in a parked car. Check on elderly or vulnerable neighbors.
 
-## 🛠️ Technical Implementation Details
+## Technical Implementation Details
 
 ### App Architecture
 - **Framework**: React Native with Expo Router for navigation
 - **Backend**: Supabase (PostgreSQL database)
-- **AI Integration**: Google Gemini API for intelligent features
+- **Smart Features**: Google Gemini API for intelligent features
 - **Icons**: Lucide React Native
 - **Styling**: Custom theme system with primary blue (#354eab), white (#ffffff), and light blue (#a8bafe)
 
@@ -241,20 +241,20 @@ Here is some general information about the disasters Relief Ready helps you prep
 - **invites**: Household invitation system
 - **chat_messages**: AI chat history
 
-### AI Features
-- **Inventory Categorization**: Automatically categorizes emergency supplies using AI
+### Smart Features
+- **Inventory Categorization**: Automatically categorizes emergency supplies using smart analysis
 - **Checklist Generation**: Creates personalized disaster checklists based on household context
 - **Smart Recommendations**: Suggests actions to improve readiness scores
 - **Contextual Chatbot**: Provides app navigation help and disaster preparedness guidance
 
 ### User Flows
 1. **Authentication**: Splash screen → Login/Signup → Profile setup → Household creation/join
-2. **Inventory Management**: Add item → AI categorization → Categorized display → Edit/Delete
+2. **Inventory Management**: Add item → Smart categorization → Categorized display → Edit/Delete
 3. **Dashboard Interaction**: View donuts → Tap for checklist → Next best actions → Seasonal alerts
 4. **Map Usage**: View hazards → Toggle layers → Tap for details → Navigate to resources
 5. **Household Management**: Add members/pets → Set location → Configure risk profile → Manage invites
 
-## 📱 UI/UX Features
+## UI/UX Features
 
 ### Visual Design
 - **Color Scheme**: Primary blue (#354eab), white (#ffffff), light blue (#a8bafe)
@@ -273,7 +273,7 @@ Here is some general information about the disasters Relief Ready helps you prep
 - **Error Handling**: Clear error messages with retry options
 - **Success States**: Confirmation messages for completed actions
 
-## 🔒 Security & Privacy
+## Security & Privacy
 
 ### Data Protection
 - **Authentication**: Secure login with Google SSO and passwordless email
@@ -287,7 +287,7 @@ Here is some general information about the disasters Relief Ready helps you prep
 - **Household Management**: Clear roles and permissions system
 - **Medical Information**: Optional medical notes with user consent
 
-## 🚀 Future Enhancements
+## Future Enhancements
 
 ### Planned Features
 - **Offline Mode**: Full app functionality without internet connection
@@ -296,8 +296,8 @@ Here is some general information about the disasters Relief Ready helps you prep
 - **Advanced Analytics**: Detailed readiness trends and insights
 - **Integration**: Connect with smart home devices and weather stations
 
-### AI Improvements
+### Smart Feature Improvements
 - **Voice Commands**: Speak to the chatbot instead of typing
 - **Image Recognition**: Take photos of supplies for automatic categorization
 - **Predictive Analytics**: Anticipate needs based on weather patterns
-- **Personalized Recommendations**: AI learns from user behavior and preferences
+- **Personalized Recommendations**: Smart system learns from user behavior and preferences

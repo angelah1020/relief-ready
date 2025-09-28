@@ -79,16 +79,22 @@ export default function DashboardScreen() {
   // Fetch user account data
   useEffect(() => {
     const fetchUserAccount = async () => {
-      if (user) {
+      if (!user) return;
+
+      try {
         const { data: account, error } = await supabase
           .from('accounts')
           .select('*')
           .eq('user_id', user.id)
           .single();
         
-        if (account && !error) {
-          setUserAccount(account);
+        if (error) {
+          return;
         }
+
+        setUserAccount(account);
+      } catch (error) {
+        // Handle error silently
       }
     };
 
@@ -101,26 +107,33 @@ export default function DashboardScreen() {
     }
   }, [currentHousehold]);
 
-  // Refresh data when screen comes into focus (e.g., returning from inventory)
+  // Refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       if (currentHousehold) {
         fetchDashboardData();
       }
-      // Also refresh user account data when screen comes into focus
+      
+      // Refresh user account data when screen comes into focus
       if (user) {
-        const fetchUserAccount = async () => {
-          const { data: account, error } = await supabase
-            .from('accounts')
-            .select('*')
-            .eq('user_id', user.id)
-            .single();
-          
-          if (account && !error) {
+        const refreshUserAccount = async () => {
+          try {
+            const { data: account, error } = await supabase
+              .from('accounts')
+              .select('*')
+              .eq('user_id', user.id)
+              .single();
+            
+            if (error) {
+              return;
+            }
+
             setUserAccount(account);
+          } catch (error) {
+            // Handle error silently
           }
         };
-        fetchUserAccount();
+        refreshUserAccount();
       }
     }, [currentHousehold, user])
   );

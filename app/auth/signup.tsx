@@ -82,94 +82,64 @@ export default function SignupScreen() {
       return;
     }
 
-      // Wait a moment for the user to be available in context
+      // Process profile data after account creation
       setTimeout(async () => {
-        console.log('Attempting to create account record...');
-        console.log('User available:', !!signupUser);
-        console.log('First name:', firstName);
-        console.log('Profile photo:', !!profilePhoto);
-        
-        if (signupUser) {
-          try {
-            // Convert profile photo to base64 if provided
-            let photoUrl = null;
-            if (profilePhoto) {
-              console.log('Converting profile photo to base64...');
-              const response = await fetch(profilePhoto);
-              const blob = await response.blob();
-              const reader = new FileReader();
-              photoUrl = await new Promise((resolve) => {
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.readAsDataURL(blob);
-              });
-              console.log('Photo converted, length:', photoUrl?.length);
-            }
+        if (!signupUser) {
+          Alert.alert('Warning', 'Account created but profile data could not be saved. You can update it later in your profile.');
+          return;
+        }
 
-            // Check if account already exists
-            const { data: existingAccount, error: fetchError } = await supabase
-              .from('accounts')
-              .select('*')
-              .eq('user_id', signupUser.id)
-              .single();
-
-            console.log('Existing account:', existingAccount);
-            console.log('Fetch error:', fetchError);
-
-            if (existingAccount) {
-              // Update existing account
-              console.log('Updating existing account...');
-              const { error: updateError } = await supabase
-                .from('accounts')
-                .update({
-                  display_name: firstName,
-                  photo_url: photoUrl,
-                })
-                .eq('user_id', signupUser.id);
-
-              if (updateError) {
-                console.error('Error updating account:', updateError);
-                Alert.alert('Warning', 'Account created but profile data could not be updated. You can update it later in your profile.');
-              } else {
-                console.log('Account updated successfully');
-              }
-            } else {
-              // Create new account
-              console.log('Creating new account...');
-              const { error: insertError } = await supabase
-                .from('accounts')
-                .insert({
-                  user_id: signupUser.id,
-                  display_name: firstName,
-                  photo_url: photoUrl,
-                });
-
-              if (insertError) {
-                console.error('Error creating account:', insertError);
-                Alert.alert('Warning', 'Account created but profile data could not be saved. You can update it later in your profile.');
-              } else {
-                console.log('Account created successfully');
-              }
-            }
-
-            // Verify the account was created/updated
-            const { data: verifyAccount, error: verifyError } = await supabase
-              .from('accounts')
-              .select('*')
-              .eq('user_id', signupUser.id)
-              .single();
-
-            console.log('Verification - Account exists:', !!verifyAccount);
-            console.log('Verification - Display name:', verifyAccount?.display_name);
-            console.log('Verification - Photo URL length:', verifyAccount?.photo_url?.length);
-          } catch (error) {
-            console.error('Error processing profile data:', error);
-            Alert.alert('Warning', 'Account created but profile data could not be saved. You can update it later in your profile.');
+        try {
+          // Convert profile photo to base64 if provided
+          let photoUrl = null;
+          if (profilePhoto) {
+            const response = await fetch(profilePhoto);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            photoUrl = await new Promise((resolve) => {
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
           }
-        } else {
-          console.error('User not available after signup');
+
+          // Check if account already exists
+          const { data: existingAccount } = await supabase
+            .from('accounts')
+            .select('*')
+            .eq('user_id', signupUser.id)
+            .single();
+
+          if (existingAccount) {
+            // Update existing account
+            const { error: updateError } = await supabase
+              .from('accounts')
+              .update({
+                display_name: firstName,
+                photo_url: photoUrl,
+              })
+              .eq('user_id', signupUser.id);
+
+            if (updateError) {
+              Alert.alert('Warning', 'Account created but profile data could not be updated. You can update it later in your profile.');
+            }
+          } else {
+            // Create new account
+            const { error: insertError } = await supabase
+              .from('accounts')
+              .insert({
+                user_id: signupUser.id,
+                display_name: firstName,
+                photo_url: photoUrl,
+              });
+
+            if (insertError) {
+              Alert.alert('Warning', 'Account created but profile data could not be saved. You can update it later in your profile.');
+            }
+          }
+        } catch (error) {
           Alert.alert('Warning', 'Account created but profile data could not be saved. You can update it later in your profile.');
         }
-      }, 2000); // Increased delay to 2 seconds
+      }, 1000);
 
     Alert.alert(
       'Welcome to Relief Ready!', 
