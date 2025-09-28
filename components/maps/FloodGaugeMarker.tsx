@@ -57,17 +57,7 @@ export default function FloodGaugeMarker({ gauge, onPress }: FloodGaugeMarkerPro
           {getStatusIcon()}
         </Text>
         
-        {/* Height indicator */}
-        {gauge.currentValue > 0 && (
-          <View style={[
-            styles.heightIndicator,
-            { backgroundColor: statusColor }
-          ]}>
-            <Text style={styles.heightText}>
-              {gauge.currentValue.toFixed(0)}'
-            </Text>
-          </View>
-        )}
+        {/* Height indicator removed to prevent blank boxes */}
       </View>
     </Marker>
   );
@@ -90,21 +80,6 @@ const styles = StyleSheet.create({
   },
   markerIcon: {
     textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  heightIndicator: {
-    position: 'absolute',
-    bottom: -8,
-    right: -8,
-    borderRadius: 8,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-  },
-  heightText: {
-    fontSize: 8,
-    color: '#FFFFFF',
     fontWeight: 'bold',
   },
 });

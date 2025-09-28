@@ -316,6 +316,33 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
     }
   }, [layers, mapRegion, loading]);
 
+  // Store refreshData in a ref to avoid dependency issues
+  const refreshDataRef = useRef(refreshData);
+  refreshDataRef.current = refreshData;
+
+  // Trigger initial data load
+  useEffect(() => {
+    refreshDataRef.current();
+  }, []); // Only run on mount
+
+  // Trigger refresh when layers are toggled
+  useEffect(() => {
+    if (layers.some(l => l.enabled) && !loading) {
+      refreshDataRef.current();
+    }
+  }, [layers.map(l => l.enabled).join(',')]);
+
+  // Debounced refresh for map region changes (only position, not deltas)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (layers.some(l => l.enabled) && !loading) {
+        refreshDataRef.current();
+      }
+    }, 1500); // Wait 1.5 seconds after map stops moving
+
+    return () => clearTimeout(timeoutId);
+  }, [mapRegion.latitude, mapRegion.longitude]);
+
   const toggleLayer = useCallback((layerId: string) => {
     setLayers(prev => {
       const updated = prev.map(layer => 
