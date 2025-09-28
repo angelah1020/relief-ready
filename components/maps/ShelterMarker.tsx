@@ -17,10 +17,12 @@ export default function ShelterMarker({ shelter, onPress }: ShelterMarkerProps) 
 
   const getStatusIcon = () => {
     switch (shelter.status.toLowerCase()) {
-      case 'open': return '🏠';
-      case 'limited': return '🏘️';
-      case 'full': return '🏢';
-      case 'closed': return '🚫';
+      case 'open': return '🏠';     // Open and accepting people
+      case 'alert': return '🚨';    // Alert - ready for activation
+      case 'standby': return '⏸️';   // Standby - on hold
+      case 'full': return '🏢';     // Full - at capacity
+      case 'limited': return '🏘️';  // Limited availability
+      case 'closed': return '🚫';   // Closed
       default: return '🏠';
     }
   };

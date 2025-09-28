@@ -60,8 +60,9 @@ export default function DisasterMap({ style, miniMap = false, zipCode }: Disaste
         break;
         
       case 'wildfire':
-        title = 'Wildfire Hotspot';
-        message = `Confidence: ${feature.confidence}%\nBrightness: ${feature.brightness}\nDetected: ${nasaApi.formatFireTime(feature.acq_date, feature.acq_time)}`;
+        const severity = nasaApi.getWildFireSeverity(feature);
+        title = `🔥 ${severity.charAt(0).toUpperCase() + severity.slice(1)} Wildfire`;
+        message = `Severity: ${severity}\nFire Radiative Power: ${feature.frp} MW\nBrightness: ${feature.brightness}K\nConfidence: ${feature.confidence}%\nDetected: ${nasaApi.formatFireTime(feature.acq_date, feature.acq_time)}`;
         break;
         
       case 'shelter':
@@ -156,21 +157,24 @@ export default function DisasterMap({ style, miniMap = false, zipCode }: Disaste
   const renderWildfires = () => {
     if (!layers.find(l => l.id === 'wildfires')?.enabled) return null;
     
-    return disasterData.wildfires.map((fire, index) => (
-      <DisasterMarker
-        key={`fire-${index}`}
-        coordinate={{
-          latitude: fire.latitude,
-          longitude: fire.longitude,
-        }}
-        title="Wildfire Hotspot"
-        description={`Confidence: ${fire.confidence}%`}
-        color={nasaApi.getConfidenceColor(fire.confidence)}
-        size={nasaApi.getFireSize(fire.brightness, fire.frp)}
-        icon="🔥"
-        onPress={() => handleMarkerPress(fire, 'wildfire')}
-      />
-    ));
+    return disasterData.wildfires.map((fire, index) => {
+      const severity = nasaApi.getWildFireSeverity(fire);
+      return (
+        <DisasterMarker
+          key={`fire-${index}`}
+          coordinate={{
+            latitude: fire.latitude,
+            longitude: fire.longitude,
+          }}
+          title={`${severity.charAt(0).toUpperCase() + severity.slice(1)} Wildfire`}
+          description={`${fire.frp} MW - ${fire.confidence}% confidence`}
+          color={nasaApi.getWildFireColor(fire)}
+          size={nasaApi.getWildFireSize(fire)}
+          icon="🔥"
+          onPress={() => handleMarkerPress(fire, 'wildfire')}
+        />
+      );
+    });
   };
 
   const renderFloodGauges = () => {

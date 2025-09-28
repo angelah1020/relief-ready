@@ -11,6 +11,11 @@ interface FloodGaugeMarkerProps {
 export default function FloodGaugeMarker({ gauge, onPress }: FloodGaugeMarkerProps) {
   const statusColor = usgsWaterApi.getFloodStatusColor(gauge.status);
   const markerSize = usgsWaterApi.getFloodStatusSize(gauge.status);
+  
+  // Don't render if gauge data is invalid
+  if (!gauge.latitude || !gauge.longitude || !gauge.name) {
+    return null;
+  }
 
   const getStatusIcon = () => {
     switch (gauge.status) {
@@ -53,14 +58,16 @@ export default function FloodGaugeMarker({ gauge, onPress }: FloodGaugeMarkerPro
         </Text>
         
         {/* Height indicator */}
-        <View style={[
-          styles.heightIndicator,
-          { backgroundColor: statusColor }
-        ]}>
-          <Text style={styles.heightText}>
-            {gauge.currentValue.toFixed(0)}'
-          </Text>
-        </View>
+        {gauge.currentValue > 0 && (
+          <View style={[
+            styles.heightIndicator,
+            { backgroundColor: statusColor }
+          ]}>
+            <Text style={styles.heightText}>
+              {gauge.currentValue.toFixed(0)}'
+            </Text>
+          </View>
+        )}
       </View>
     </Marker>
   );
