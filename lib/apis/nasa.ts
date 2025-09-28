@@ -55,7 +55,6 @@ class NASAApi {
         url = `${this.baseUrl}/area/csv/${this.mapKey}/VIIRS_SNPP_NRT/-125,25,-66,49/${days}`;
       }
       
-      console.log('Fetching FIRMS fire data from:', url);
       
       const response = await fetch(url);
       if (!response.ok) {
@@ -65,11 +64,10 @@ class NASAApi {
       const csvText = await response.text();
       const fires = this.parseFireCSV(csvText);
       
-      console.log(`Found ${fires.length} fire hotspots from FIRMS API`);
       return fires;
       
     } catch (error) {
-      console.warn('FIRMS API unavailable, using mock data:', error);
+      // FIRMS API unavailable, using mock data
       return this.getMockFireData();
     }
   }
@@ -121,7 +119,7 @@ class NASAApi {
           type: 0, // Default type since FIRMS doesn't provide this field
         });
       } catch (error) {
-        console.warn('Error parsing fire data row:', values, error);
+        // Error parsing fire data row
         continue;
       }
     }
@@ -129,7 +127,6 @@ class NASAApi {
       // Filter to show only significant wildfires (not all fire detections)
       const significantFires = fires.filter(fire => this.isSignificantWildfire(fire));
       
-      console.log(`Parsed ${fires.length} fire detections, filtered to ${significantFires.length} significant wildfires`);
       return significantFires;
   }
 

@@ -44,7 +44,7 @@ export class ChecklistGenerator {
       const text = response.text || '';
       return this.parseChecklistResponse(text, hazardType);
     } catch (error: any) {
-      console.error('Checklist generation failed:', error);
+      // Checklist generation failed
       throw error; // Re-throw the error instead of using fallback
     }
   }
@@ -66,7 +66,7 @@ export class ChecklistGenerator {
       const text = response.text || '';
       return this.parseBatchResponse(text, hazardTypes);
     } catch (error: any) {
-      console.error('Batch checklist generation failed:', error);
+      // Batch checklist generation failed
       throw error;
     }
   }
@@ -175,8 +175,7 @@ Return JSON:
       
       return checklistItems;
     } catch (error) {
-      console.error('Error parsing checklist response:', error);
-      console.error('Raw response:', response);
+      // Error parsing checklist response
       throw error; // Re-throw instead of using fallback
     }
   }
@@ -203,7 +202,7 @@ Return JSON:
       
       return result;
     } catch (error) {
-      console.error('Failed to parse batch response:', error);
+      // Failed to parse batch response
       throw new Error('Failed to parse AI batch response');
     }
   }

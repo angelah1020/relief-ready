@@ -115,7 +115,7 @@ export default function ChatbotScreen() {
       };
       setMessages(prev => [...prev, botResponse]);
     } catch (error) {
-      console.error('Error getting chatbot response:', error);
+      // Error getting chatbot response
       const errorResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
         text: 'I\'m having trouble connecting right now. Please try again in a moment.',

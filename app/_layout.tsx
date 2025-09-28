@@ -9,7 +9,6 @@ import { MapProvider } from '@/contexts/MapContext';
 import * as SplashScreen from 'expo-splash-screen';
 
 export default function RootLayout() {
-  // console.log('RootLayout - Rendered');
   const router = useRouter();
   useFrameworkReady();
 
@@ -17,7 +16,6 @@ export default function RootLayout() {
   useEffect(() => {
     // Force navigation test after 0.01 seconds
     const timer = setTimeout(() => {
-      // console.log('RootLayout - Force navigation to login');
       router.replace('/auth/login');
     }, 10);
 

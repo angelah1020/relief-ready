@@ -61,7 +61,6 @@ class OpenFEMAApi {
       const dateFilter = thirtyDaysAgo.toISOString().split('T')[0];
       
       const url = `${this.baseUrl}/DisasterDeclarationsSummaries`;
-      console.log('Fetching active FEMA disasters from:', url);
       
       const response = await fetch(url);
       if (!response.ok) {
@@ -81,10 +80,9 @@ class OpenFEMAApi {
         return isRecent && needsShelters;
       });
 
-      console.log(`Found ${recentDisasters.length} active FEMA disasters requiring shelters`);
       return recentDisasters;
     } catch (error) {
-      console.warn('OpenFEMA API unavailable:', error);
+      // OpenFEMA API unavailable
       return [];
     }
   }
@@ -95,7 +93,6 @@ class OpenFEMAApi {
   async getDisastersByState(stateCode: string): Promise<FEMADisasterDeclaration[]> {
     try {
       const url = `${this.baseUrl}/DisasterDeclarationsSummaries`;
-      console.log(`Fetching FEMA disasters for state ${stateCode}`);
       
       const response = await fetch(url);
       if (!response.ok) {
@@ -111,10 +108,9 @@ class OpenFEMAApi {
         this.disasterRequiresShelters(disaster.incidentType, disaster.declarationType)
       );
 
-      console.log(`Found ${stateDisasters.length} FEMA disasters for state ${stateCode}`);
       return stateDisasters;
     } catch (error) {
-      console.warn('OpenFEMA API unavailable for state query:', error);
+      // OpenFEMA API unavailable for state query
       return [];
     }
   }
@@ -131,10 +127,9 @@ class OpenFEMAApi {
         disaster.fipsCountyCode === countyCode.padStart(3, '0')
       );
 
-      console.log(`Found ${countyDisasters.length} FEMA disasters for county ${stateCode}-${countyCode}`);
       return countyDisasters;
     } catch (error) {
-      console.warn('OpenFEMA API unavailable for county query:', error);
+      // OpenFEMA API unavailable for county query
       return [];
     }
   }

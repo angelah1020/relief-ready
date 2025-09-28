@@ -138,7 +138,7 @@ export default function DashboardScreen() {
             });
           }
         } catch (error) {
-          console.error(`Error fetching checklist for ${hazardType}:`, error);
+          // Error fetching checklist
           // Default to 0% if there's an error
           donutDataArray.push({
             hazard_type: hazardType,
@@ -162,7 +162,7 @@ export default function DashboardScreen() {
         setNextBestActions(nbaActions);
       }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      // Error fetching dashboard data
     } finally {
       setLoading(false);
     }

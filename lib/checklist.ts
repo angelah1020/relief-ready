@@ -29,7 +29,6 @@ export interface GenerateChecklistResponse {
 export async function generateChecklist(
   request: GenerateChecklistRequest
 ): Promise<GenerateChecklistResponse> {
-  console.log('Generating checklist:', request)
   
   try {
     // Get household and members data (no pet filtering needed since members table has no pets)
@@ -77,16 +76,13 @@ export async function generateChecklist(
       total_people: adults + children + seniors + infants
     }
 
-    console.log('Household profile:', householdProfile)
 
     // Generate checklist using Gemini with retry logic
-    console.log('Generating checklist with Gemini...')
     const generatedItems = await checklistGenerator.generateChecklist(
       request.hazard_type,
       householdProfile
     )
 
-    console.log('Generated items:', generatedItems)
 
     // Delete existing checklist items for this hazard type
     const { error: deleteError } = await supabase
@@ -96,7 +92,7 @@ export async function generateChecklist(
       .eq('hazard_type', request.hazard_type)
 
     if (deleteError) {
-      console.error('Error deleting existing checklist:', deleteError)
+      // Error deleting existing checklist
       // Continue anyway, might be first time
     }
 
@@ -109,7 +105,6 @@ export async function generateChecklist(
       hazard_type: item.hazard_type
     }))
 
-    console.log('Inserting checklist rows:', checklistRows)
 
     const { data: insertedItems, error: insertError } = await supabase
       .from('checklist_items')
@@ -117,11 +112,10 @@ export async function generateChecklist(
       .select()
 
     if (insertError) {
-      console.error('Error inserting checklist items:', insertError)
+      // Error inserting checklist items
       throw insertError
     }
 
-    console.log('Successfully inserted items:', insertedItems)
 
     return {
       success: true,
@@ -130,7 +124,7 @@ export async function generateChecklist(
     }
 
   } catch (error: any) {
-    console.error('Error in generateChecklist:', error)
+    // Error in generateChecklist
     throw new Error(`Failed to generate checklist: ${error.message}`)
   }
 }
@@ -142,7 +136,6 @@ export async function getChecklistItems(
   householdId: string, 
   hazardType: string
 ): Promise<ChecklistItem[]> {
-  console.log('Fetching checklist items:', { householdId, hazardType })
   
   const { data, error } = await supabase
     .from('checklist_items')
@@ -151,10 +144,9 @@ export async function getChecklistItems(
     .eq('hazard_type', hazardType)
     .order('item_key')
 
-  console.log('Checklist items query result:', { data, error })
 
   if (error) {
-    console.error('Database error:', error)
+    // Database error
     throw new Error(`Failed to fetch checklist items: ${error.message}`)
   }
 
@@ -165,7 +157,6 @@ export async function getChecklistItems(
  * Get all checklists for a household (grouped by hazard type)
  */
 export async function getAllChecklists(householdId: string): Promise<Record<string, ChecklistItem[]>> {
-  console.log('Fetching all checklists for household:', householdId)
   
   const { data, error } = await supabase
     .from('checklist_items')
@@ -174,7 +165,7 @@ export async function getAllChecklists(householdId: string): Promise<Record<stri
     .order('hazard_type, item_key')
 
   if (error) {
-    console.error('Database error:', error)
+    // Database error
     throw new Error(`Failed to fetch checklists: ${error.message}`)
   }
 
@@ -248,7 +239,6 @@ export function getAvailableCategories(): string[] {
  * Generate all checklists for a household in a single batch API call (much faster!)
  */
 export async function generateAllChecklists(householdId: string) {
-  console.log('Generating all checklists in batch for household:', householdId)
   
   try {
     // Get household and members data (no pet filtering needed since members table has no pets)
@@ -296,18 +286,15 @@ export async function generateAllChecklists(householdId: string) {
       total_people: adults + children + seniors + infants
     }
 
-    console.log('Household profile for batch generation:', householdProfile)
 
     const hazardTypes = getAvailableHazardTypes()
 
     // Generate all checklists in a single API call
-    console.log('Generating all checklists with Gemini in batch...')
     const allGeneratedChecklists = await checklistGenerator.generateAllChecklists(
       householdProfile,
       hazardTypes
     )
 
-    console.log('Generated all checklists:', allGeneratedChecklists)
 
     // Delete all existing checklist items for this household
     const { error: deleteError } = await supabase
@@ -316,7 +303,7 @@ export async function generateAllChecklists(householdId: string) {
       .eq('household_id', householdId)
 
     if (deleteError) {
-      console.error('Error deleting existing checklists:', deleteError)
+      // Error deleting existing checklists
       // Continue anyway
     }
 
@@ -335,7 +322,6 @@ export async function generateAllChecklists(householdId: string) {
       }
     }
 
-    console.log('Inserting all checklist rows:', allChecklistRows.length, 'items')
 
     // Insert all new checklists at once
     const { data: insertedItems, error: insertError } = await supabase
@@ -344,11 +330,10 @@ export async function generateAllChecklists(householdId: string) {
       .select()
 
     if (insertError) {
-      console.error('Error inserting batch checklist items:', insertError)
+      // Error inserting batch checklist items
       throw insertError
     }
 
-    console.log('Successfully inserted all checklist items:', insertedItems?.length)
 
     return {
       success: true,
@@ -357,7 +342,7 @@ export async function generateAllChecklists(householdId: string) {
     }
 
   } catch (error: any) {
-    console.error('Error in generateAllChecklists:', error)
+    // Error in generateAllChecklists
     throw new Error(`Failed to generate all checklists: ${error.message}`)
   }
 }

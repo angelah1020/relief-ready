@@ -130,7 +130,7 @@ export default function HouseholdScreen() {
       
       setMembers(membersWithAccounts);
     } catch (error) {
-      console.error('Error fetching members:', error);
+      // Error fetching members
       Alert.alert('Error', 'Failed to fetch household members');
     } finally {
       setLoadingMembers(false);
@@ -150,7 +150,7 @@ export default function HouseholdScreen() {
       if (error) throw error;
       setPets(petsData || []);
     } catch (error) {
-      console.error('Error fetching pets:', error);
+      // Error fetching pets
       Alert.alert('Error', 'Failed to fetch household pets');
     } finally {
       setLoadingPets(false);
@@ -172,7 +172,7 @@ export default function HouseholdScreen() {
         setProfilePhoto(data.photo_url);
       }
     } catch (error) {
-      console.error('Error fetching account:', error);
+      // Error fetching account
     } finally {
       setLoading(false);
     }
@@ -210,7 +210,7 @@ export default function HouseholdScreen() {
         ]
       );
     } catch (error) {
-      console.error('Error requesting permissions:', error);
+      // Error requesting permissions
       Alert.alert('Error', 'Failed to access photo library');
     }
   };
@@ -234,7 +234,7 @@ export default function HouseholdScreen() {
         await uploadProfilePhoto(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Error taking photo:', error);
+      // Error taking photo
       Alert.alert('Error', 'Failed to take photo');
     }
   };
@@ -252,7 +252,7 @@ export default function HouseholdScreen() {
         await uploadProfilePhoto(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Error picking image:', error);
+      // Error picking image
       Alert.alert('Error', 'Failed to pick image');
     }
   };
@@ -284,7 +284,7 @@ export default function HouseholdScreen() {
           fetchMembers();
           Alert.alert('Success', 'Profile photo updated successfully!');
         } catch (error) {
-          console.error('Error uploading photo:', error);
+          // Error uploading photo
           Alert.alert('Error', 'Failed to upload photo');
         } finally {
           setIsUploadingPhoto(false);
@@ -293,7 +293,7 @@ export default function HouseholdScreen() {
 
       reader.readAsDataURL(blob);
     } catch (error) {
-      console.error('Error processing photo:', error);
+      // Error processing photo
       Alert.alert('Error', 'Failed to process photo');
       setIsUploadingPhoto(false);
     }
@@ -313,7 +313,7 @@ export default function HouseholdScreen() {
       fetchMembers();
       Alert.alert('Success', 'Profile photo removed successfully!');
     } catch (error) {
-      console.error('Error removing photo:', error);
+      // Error removing photo
       Alert.alert('Error', 'Failed to remove photo');
     }
   };
@@ -334,9 +334,6 @@ export default function HouseholdScreen() {
       ]);
 
       // Debug: Log data being sent to PDF
-      console.log('PDF Generation Data:');
-      console.log('Inventory categories:', inventoryData.length);
-      console.log('Checklist hazards:', checklistData.length);
 
       // Prepare household data
       const householdData: HouseholdData = {
@@ -370,7 +367,6 @@ export default function HouseholdScreen() {
       let mapImageUri: string | undefined;
       try {
         if (mapRef.current && currentHousehold?.zip_code && currentHousehold.latitude && currentHousehold.longitude) {
-          console.log('Capturing map screenshot...');
           
           // Add delay to ensure map renders completely
           await new Promise(resolve => setTimeout(resolve, 1500));
@@ -380,13 +376,11 @@ export default function HouseholdScreen() {
             quality: 0.8,
             result: 'base64',
           });
-          console.log('Map screenshot captured successfully, length:', mapImageUri?.length);
-          console.log('Map screenshot preview:', mapImageUri?.substring(0, 50) + '...');
         } else {
-          console.log('Map not available for screenshot - ref:', !!mapRef.current, 'zip:', currentHousehold?.zip_code, 'lat:', currentHousehold?.latitude, 'lng:', currentHousehold?.longitude);
+          // Map not available for screenshot
         }
       } catch (error) {
-        console.error('Error capturing map screenshot:', error);
+        // Error capturing map screenshot
         // Continue without map image
       }
 
@@ -413,7 +407,7 @@ export default function HouseholdScreen() {
       await pdfExportService.sharePDF(pdfUri);
 
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      // Error generating PDF
       Alert.alert('Error', 'Failed to generate PDF report');
     } finally {
       setIsGeneratingPDF(false);
@@ -456,7 +450,7 @@ export default function HouseholdScreen() {
         }>
       }));
     } catch (error) {
-      console.error('Error fetching inventory data:', error);
+      // Error fetching inventory data
       return [];
     }
   };
@@ -539,7 +533,7 @@ export default function HouseholdScreen() {
 
       return result;
     } catch (error) {
-      console.error('Error fetching checklist data:', error);
+      // Error fetching checklist data
       // Return sample data if there's an error
       const fallbackData = [
         {
@@ -581,7 +575,7 @@ export default function HouseholdScreen() {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching pets data:', error);
+      // Error fetching pets data
       return [];
     }
   };
@@ -625,17 +619,17 @@ export default function HouseholdScreen() {
       if (result.action === ShareAPI.sharedAction) {
         if (result.activityType) {
           // Shared via activity type
-          console.log('Shared via:', result.activityType);
+          // Shared via activity type
         } else {
           // Shared successfully
-          console.log('Invite shared successfully');
+          // Invite shared successfully
         }
       } else if (result.action === ShareAPI.dismissedAction) {
         // Dismissed
-        console.log('Share dismissed');
+        // Share dismissed
       }
     } catch (error) {
-      console.error('Error sharing invite:', error);
+      // Error sharing invite
       Alert.alert('Error', 'Failed to share invite. You can manually share the join code: ' + currentHousehold.join_code);
     }
   };
@@ -667,7 +661,7 @@ export default function HouseholdScreen() {
                 return;
               }
 
-              console.log('Starting account deletion process for user:', user.id);
+              // Starting account deletion process
 
               // Step 1: Get the account ID first
               const { data: account } = await supabase
@@ -677,7 +671,7 @@ export default function HouseholdScreen() {
                 .single();
 
               const accountId = account?.id;
-              console.log('Found account ID:', accountId);
+              // Found account ID
 
               // Step 2: Delete all related data manually (since RPC functions may not exist)
               try {
@@ -706,7 +700,7 @@ export default function HouseholdScreen() {
                   }
                 }
 
-                console.log('Households to delete (user is only member):', householdsToDelete);
+                // Households to delete (user is only member)
 
                 // Delete household-related data for households being deleted
                 for (const householdId of householdsToDelete) {
@@ -725,43 +719,43 @@ export default function HouseholdScreen() {
                   // Delete donut status
                   await supabase.from('donut_status').delete().eq('household_id', householdId);
                   
-                  console.log('Deleted data for household:', householdId);
+                  // Deleted data for household
                 }
 
                 // Remove user from all memberships
                 if (accountId) {
                   await supabase.from('memberships').delete().eq('account_id', accountId);
-                  console.log('Removed all memberships');
+                  // Removed all memberships
                 }
 
                 // Delete the empty households
                 for (const householdId of householdsToDelete) {
                   await supabase.from('households').delete().eq('id', householdId);
-                  console.log('Deleted household:', householdId);
+                  // Deleted household
                 }
 
                 // Delete chat messages
                 await supabase.from('chat_messages').delete().eq('user_id', user.id);
-                console.log('Deleted chat messages');
+                // Deleted chat messages
 
                 // Unclaim members in other households
                 await supabase.from('members').update({ claimed_by: null }).eq('claimed_by', user.id);
-                console.log('Unclaimed members');
+                // Unclaimed members
 
                 // Remove creator references from remaining households
                 await supabase.from('members').update({ created_by: null }).eq('created_by', user.id);
                 await supabase.from('households').update({ created_by: null }).eq('created_by', user.id);
-                console.log('Removed creator references');
+                // Removed creator references
 
                 // Delete account record
                 if (accountId) {
                   await supabase.from('accounts').delete().eq('id', accountId);
-                  console.log('Deleted account record');
+                  // Deleted account record
                 }
 
-                console.log('Successfully deleted all account data');
+                // Successfully deleted all account data
               } catch (cleanupError) {
-                console.error('Error during cleanup:', cleanupError);
+                // Error during cleanup
                 Alert.alert('Error', 'Failed to delete some account data. Please try again.');
                 return;
               }
@@ -782,7 +776,7 @@ export default function HouseholdScreen() {
                 ]
               );
             } catch (error) {
-              console.error('Error deleting account:', error);
+              // Error deleting account
               Alert.alert('Error', 'Failed to delete account. Please try again.');
             }
           },
@@ -851,7 +845,7 @@ export default function HouseholdScreen() {
               
               Alert.alert('Success', 'You have left the household successfully.');
             } catch (error: any) {
-              console.error('Error leaving household:', error);
+              // Error leaving household
               Alert.alert('Error', error.message || 'Failed to leave household');
             }
           },
@@ -924,7 +918,7 @@ export default function HouseholdScreen() {
                 router.push('/household-setup/create');
               }
             } catch (error) {
-              console.error('Error deleting household:', error);
+              // Error deleting household
               Alert.alert('Error', 'Failed to delete household');
             }
           },
@@ -1216,9 +1210,9 @@ export default function HouseholdScreen() {
                                     if (currentHousehold) {
                                       try {
                                         await generateAllChecklists(currentHousehold.id);
-                                        console.log('Checklists regenerated after member deletion');
+                                        // Checklists regenerated after member deletion
                                       } catch (checklistError) {
-                                        console.error('Failed to regenerate checklists:', checklistError);
+                                        // Failed to regenerate checklists
                                         // Don't fail the member deletion if checklist generation fails
                                       }
                                     }
@@ -1607,7 +1601,7 @@ export default function HouseholdScreen() {
                       .eq('id', editingMember.id);
 
                     if (memberError) {
-                      console.error('Member update error:', memberError);
+                      // Member update error
                       throw memberError;
                     }
                   } else {
@@ -1625,15 +1619,15 @@ export default function HouseholdScreen() {
                   // Regenerate all checklists since household composition changed
                   try {
                     await generateAllChecklists(currentHousehold.id);
-                    console.log('Checklists regenerated after member update');
+                    // Checklists regenerated after member update
                   } catch (checklistError) {
-                    console.error('Failed to regenerate checklists:', checklistError);
+                    // Failed to regenerate checklists
                     // Don't fail the member update if checklist generation fails
                   }
                   
                   setShowMemberModal(false);
                 } catch (error) {
-                  console.error('Error saving member:', error);
+                  // Error saving member
                   Alert.alert('Error', 'Failed to save member information');
                 }
               }}
@@ -1770,7 +1764,7 @@ export default function HouseholdScreen() {
                       .eq('id', editingPet.id);
 
                     if (petError) {
-                      console.error('Pet update error:', petError);
+                      // Pet update error
                       throw petError;
                     }
                   } else {
@@ -1785,7 +1779,7 @@ export default function HouseholdScreen() {
                   await fetchPets();
                   setShowPetModal(false);
                 } catch (error) {
-                  console.error('Error saving pet:', error);
+                  // Error saving pet
                   Alert.alert('Error', 'Failed to save pet information');
                 }
               }}

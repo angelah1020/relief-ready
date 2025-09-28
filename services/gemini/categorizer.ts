@@ -65,7 +65,7 @@ export class InventoryCategorizer {
       const text = response.text || '';
       return this.parseCategorizationResponse(text);
     } catch (error: any) {
-      console.error('Error categorizing item:', error);
+      // Error categorizing item
       
       // Return a default categorization for any error
       return {
@@ -97,7 +97,7 @@ export class InventoryCategorizer {
       const text = response.text || '';
       return this.parseInventoryProcessingResponse(text);
     } catch (error: any) {
-      console.error('Error processing inventory item:', error);
+      // Error processing inventory item
       
       // Return a default processing result for any error
       return {
@@ -155,7 +155,7 @@ Respond in JSON format:
         reasoning: parsed.reasoning || 'No reasoning provided'
       };
     } catch (error) {
-      console.error('Error parsing categorization response:', error);
+      // Error parsing categorization response
       return {
         category: 'Other',
         confidence: 0.1,
@@ -228,7 +228,7 @@ Examples:
         reasoning: parsed.reasoning || 'No reasoning provided'
       };
     } catch (error) {
-      console.error('Error parsing inventory processing response:', error);
+      // Error parsing inventory processing response
       return {
         canonical_key: 'non_perishable_food',
         canonical_quantity: 1,

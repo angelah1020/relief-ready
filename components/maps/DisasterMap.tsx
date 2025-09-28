@@ -95,7 +95,6 @@ export default function DisasterMap({ style, miniMap = false, zipCode }: Disaste
 
   const handleGetDirections = (feature: any, type: string) => {
     // Implementation for opening directions in maps app
-    console.log('Get directions to:', feature, type);
   };
 
   const renderAlerts = () => {
@@ -240,9 +239,6 @@ export default function DisasterMap({ style, miniMap = false, zipCode }: Disaste
   const renderShelters = () => {
     if (!layers.find(l => l.id === 'shelters')?.enabled) return null;
     
-    console.log('Shelters layer enabled:', layers.find(l => l.id === 'shelters')?.enabled);
-    console.log('Shelter data:', disasterData.shelters);
-    console.log('Number of shelters:', disasterData.shelters.length);
     
     return disasterData.shelters.map((shelter, index) => (
       <ShelterMarker

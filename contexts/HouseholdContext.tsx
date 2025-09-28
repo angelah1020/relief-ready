@@ -61,7 +61,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
             return;
           }
         } catch (createError) {
-          console.error('HouseholdContext: Error creating account:', createError);
+          // HouseholdContext: Error creating account
           setHouseholds([]);
           setLoading(false);
           return;
@@ -118,7 +118,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
                   return updatedHousehold || household;
                 }
               } catch (error) {
-                console.warn('Failed to geocode household:', error);
+                // Failed to geocode household
               }
             }
             return household;
@@ -135,7 +135,7 @@ export function HouseholdProvider({ children }: { children: React.ReactNode }) {
         setHouseholds([]);
       }
     } catch (error) {
-      console.error('Error fetching households:', error);
+      // Error fetching households
       setHouseholds([]);
     } finally {
       setLoading(false);

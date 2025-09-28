@@ -270,7 +270,7 @@ Manage pending invitations you've sent to others to join your household. You can
       
       return result.text || '';
     } catch (error: any) {
-      console.error('Error generating AI response:', error);
+      // Error generating AI response
       return this.getFallbackResponse(userMessage, context);
     }
   }

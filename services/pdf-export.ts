@@ -91,12 +91,6 @@ export class PDFExportService {
     const currentTime = new Date().toLocaleTimeString();
 
     // Debug logging
-    console.log('PDF HTML Generation:');
-    console.log('Inventory data length:', inventoryData.length);
-    console.log('Checklist data length:', checklistData.length);
-    console.log('Map data available:', !!mapData);
-    console.log('Map image URI available:', !!mapData?.mapImageUri);
-    console.log('Map image URI length:', mapData?.mapImageUri?.length || 0);
 
     return `
 <!DOCTYPE html>
@@ -734,7 +728,7 @@ export class PDFExportService {
 
       return uri;
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      // Error generating PDF
       throw new Error('Failed to generate PDF report');
     }
   }
@@ -750,7 +744,7 @@ export class PDFExportService {
         throw new Error('Sharing is not available on this device');
       }
     } catch (error) {
-      console.error('Error sharing PDF:', error);
+      // Error sharing PDF
       throw new Error('Failed to share PDF report');
     }
   }
@@ -767,7 +761,7 @@ export class PDFExportService {
 
       return fileUri;
     } catch (error) {
-      console.error('Error saving PDF:', error);
+      // Error saving PDF
       throw new Error('Failed to save PDF report');
     }
   }

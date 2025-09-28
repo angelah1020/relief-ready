@@ -76,7 +76,7 @@ export async function processAndSaveInventoryItem(
       category: data.category
     };
   } catch (error) {
-    console.error('Error processing inventory item:', error);
+    // Error processing inventory item
     throw error;
   }
 }
@@ -140,7 +140,7 @@ export async function updateInventoryItemWithAI(
       category: data.category
     };
   } catch (error) {
-    console.error('Error updating inventory item:', error);
+    // Error updating inventory item
     throw error;
   }
 }
@@ -210,7 +210,7 @@ export async function getChecklistSummary(householdId: string, hazardType?: stri
 
     return summaryItems;
   } catch (error) {
-    console.error('Error fetching checklist summary:', error);
+    // Error fetching checklist summary
     throw error;
   }
 }
@@ -243,7 +243,7 @@ export async function getHouseholdPreparedness(householdId: string) {
       fulfilledItems
     };
   } catch (error) {
-    console.error('Error calculating household preparedness:', error);
+    // Error calculating household preparedness
     throw error;
   }
 }

@@ -77,7 +77,7 @@ class FEMAApi {
       const data: FEMADisasterResponse = await response.json();
       return data.DisasterDeclarationsSummaries;
     } catch (error) {
-      console.warn('FEMA API unavailable:', error);
+      // FEMA API unavailable
       return [];
     }
   }
@@ -97,7 +97,7 @@ class FEMAApi {
       const data: FEMADisasterResponse = await response.json();
       return data.DisasterDeclarationsSummaries;
     } catch (error) {
-      console.warn('FEMA API unavailable:', error);
+      // FEMA API unavailable
       return [];
     }
   }
@@ -119,7 +119,7 @@ class FEMAApi {
       const data: FEMADisasterResponse = await response.json();
       return data.DisasterDeclarationsSummaries;
     } catch (error) {
-      console.warn('FEMA API unavailable:', error);
+      // FEMA API unavailable
       return [];
     }
   }
@@ -143,12 +143,7 @@ class FEMAApi {
       if (boundingBox) {
         const geometry = `${boundingBox.minLng},${boundingBox.minLat},${boundingBox.maxLng},${boundingBox.maxLat}`;
         url += `&geometry=${geometry}&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects`;
-        console.log('Shelter API URL with spatial filter:', url);
-      } else {
-        console.log('Shelter API URL (no spatial filter):', url);
       }
-
-      console.log('Fetching FEMA Shelters from unified API:', url);
       
       const response = await fetch(url);
       if (!response.ok) {
@@ -158,17 +153,15 @@ class FEMAApi {
       const data = await response.json();
       
       if (!data.features || !Array.isArray(data.features)) {
-        console.warn('No shelter features found in response');
+        // No shelter features found in response
         return [];
       }
-
-      console.log(`Found ${data.features.length} total shelters from FEMA API`);
       
       return data.features.map((feature: any) => this.mapUnifiedShelterFeatureToFEMAShelter(feature))
         .filter((shelter: FEMAShelter | null) => shelter !== null) as FEMAShelter[];
       
     } catch (error) {
-      console.warn('FEMA Shelter Locations API unavailable:', error);
+      // FEMA Shelter Locations API unavailable
       return [];
     }
   }
@@ -181,7 +174,7 @@ class FEMAApi {
     
     // Validate required fields
     if (!attrs.shelter_id || !attrs.latitude || !attrs.longitude) {
-      console.warn('Invalid shelter data: missing required fields', attrs);
+      // Invalid shelter data: missing required fields
       return null;
     }
 

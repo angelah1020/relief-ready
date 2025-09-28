@@ -31,13 +31,13 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        console.error('Error fetching account:', error);
+        // Error fetching account
         setAccount(null);
       } else {
         setAccount(data);
       }
     } catch (error) {
-      console.error('Error fetching account:', error);
+      // Error fetching account
       setAccount(null);
     } finally {
       setLoading(false);
