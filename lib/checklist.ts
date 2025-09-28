@@ -30,7 +30,7 @@ export async function generateChecklist(
   console.log('Generating checklist:', request)
   
   try {
-    // Get household and members data
+    // Get household and members data (no pet filtering needed since members table has no pets)
     const { data: members, error: membersError } = await supabase
       .from('members')
       .select('*')
@@ -40,12 +40,22 @@ export async function generateChecklist(
       throw new Error(`Failed to fetch household members: ${membersError.message}`)
     }
 
+    // Get pets data separately
+    const { data: pets, error: petsError } = await supabase
+      .from('pets')
+      .select('*')
+      .eq('household_id', request.household_id)
+
+    if (petsError) {
+      throw new Error(`Failed to fetch household pets: ${petsError.message}`)
+    }
+
     // Calculate demographics from members
     const adults = members.filter(m => m.age_group === 'adult').length
     const children = members.filter(m => m.age_group === 'child').length
     const seniors = members.filter(m => m.age_group === 'senior').length
     const infants = members.filter(m => m.age_group === 'infant').length
-    const pets = members.filter(m => m.age_group === 'pet').length
+    const petCount = pets?.length || 0
 
     // Get medical needs information
     const membersWithMedicalNeeds = members.filter(m => m.medical_notes && m.medical_notes.trim() !== '')
@@ -59,7 +69,7 @@ export async function generateChecklist(
       children,
       seniors,
       infants,
-      pets: pets > 0 ? { total: pets } : { total: 0 },
+      pets: petCount > 0 ? { total: petCount } : { total: 0 },
       duration_days: 3,
       medical_needs: medicalNeeds,
       total_people: adults + children + seniors + infants
@@ -239,7 +249,7 @@ export async function generateAllChecklists(householdId: string) {
   console.log('Generating all checklists in batch for household:', householdId)
   
   try {
-    // Get household and members data
+    // Get household and members data (no pet filtering needed since members table has no pets)
     const { data: members, error: membersError } = await supabase
       .from('members')
       .select('*')
@@ -249,12 +259,22 @@ export async function generateAllChecklists(householdId: string) {
       throw new Error(`Failed to fetch household members: ${membersError.message}`)
     }
 
+    // Get pets data separately
+    const { data: pets, error: petsError } = await supabase
+      .from('pets')
+      .select('*')
+      .eq('household_id', householdId)
+
+    if (petsError) {
+      throw new Error(`Failed to fetch household pets: ${petsError.message}`)
+    }
+
     // Calculate demographics from members
     const adults = members.filter(m => m.age_group === 'adult').length
     const children = members.filter(m => m.age_group === 'child').length
     const seniors = members.filter(m => m.age_group === 'senior').length
     const infants = members.filter(m => m.age_group === 'infant').length
-    const pets = members.filter(m => m.age_group === 'pet').length
+    const petCount = pets?.length || 0
 
     // Get medical needs information
     const membersWithMedicalNeeds = members.filter(m => m.medical_notes && m.medical_notes.trim() !== '')
@@ -268,7 +288,7 @@ export async function generateAllChecklists(householdId: string) {
       children,
       seniors,
       infants,
-      pets: pets > 0 ? { total: pets } : { total: 0 },
+      pets: petCount > 0 ? { total: petCount } : { total: 0 },
       duration_days: 3,
       medical_needs: medicalNeeds,
       total_people: adults + children + seniors + infants

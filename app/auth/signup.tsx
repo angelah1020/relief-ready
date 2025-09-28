@@ -64,13 +64,26 @@ export default function SignupScreen() {
     }
 
     setLoading(true);
-    const { error } = await signUp(email, password);
+    const { error, isNewUser } = await signUp(email, password);
     
     if (error) {
       Alert.alert('Error', error.message);
     } else {
-      Alert.alert('Success', 'Account created successfully! You can now sign in.');
-      router.replace('/auth/login');
+      if (isNewUser) {
+        Alert.alert(
+          'Welcome to Relief Ready!', 
+          'Account created successfully! Let\'s set up your household.',
+          [
+            {
+              text: 'Get Started',
+              onPress: () => router.replace('/household-setup'),
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Success', 'Account created successfully! You can now sign in.');
+        router.replace('/auth/login');
+      }
     }
     setLoading(false);
   };

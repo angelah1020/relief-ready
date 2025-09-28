@@ -40,6 +40,18 @@ import {
   Camera,
 } from 'lucide-react-native';
 
+const PET_TYPES = [
+  'Dog',
+  'Cat',
+  'Bird',
+  'Fish',
+  'Rabbit',
+  'Hamster',
+  'Guinea Pig',
+  'Reptile',
+  'Other',
+];
+
 export default function HouseholdScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
@@ -50,22 +62,27 @@ export default function HouseholdScreen() {
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [showHouseholdDropdown, setShowHouseholdDropdown] = useState(false);
   const [showMemberModal, setShowMemberModal] = useState(false);
+  const [showPetModal, setShowPetModal] = useState(false);
   const [editingMember, setEditingMember] = useState<Tables<'members'> | null>(null);
+  const [editingPet, setEditingPet] = useState<Tables<'pets'> | null>(null);
   const [memberForm, setMemberForm] = useState({
     firstName: '',
     lastName: '',
     ageGroup: 'adult' as 'infant' | 'child' | 'teen' | 'adult' | 'senior',
     medicalNotes: '',
     contactInfo: '',
-    hasPet: false,
-    petName: '',
-    petType: '',
-    petSize: 'medium' as 'small' | 'medium' | 'large',
-    petNotes: '',
+  });
+  const [petForm, setPetForm] = useState({
+    name: '',
+    type: 'Dog',
+    size: 'medium' as 'small' | 'medium' | 'large',
+    medicalNotes: '',
   });
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [pets, setPets] = useState<Tables<'pets'>[]>([]);
+  const [loadingPets, setLoadingPets] = useState(false);
   const mapRef = useRef<View>(null);
 
   useEffect(() => {
@@ -77,11 +94,12 @@ export default function HouseholdScreen() {
   useEffect(() => {
     if (currentHousehold) {
       fetchMembers();
+      fetchPets();
     }
   }, [currentHousehold]);
   
   const fetchMembers = async () => {
-    if (!currentHousehold) return;
+    if (!currentHousehold || !user) return;
     
     setLoadingMembers(true);
     try {
@@ -116,6 +134,26 @@ export default function HouseholdScreen() {
       Alert.alert('Error', 'Failed to fetch household members');
     } finally {
       setLoadingMembers(false);
+    }
+  };
+
+  const fetchPets = async () => {
+    if (!currentHousehold) return;
+    
+    setLoadingPets(true);
+    try {
+      const { data: petsData, error } = await supabase
+        .from('pets')
+        .select('*')
+        .eq('household_id', currentHousehold.id);
+      
+      if (error) throw error;
+      setPets(petsData || []);
+    } catch (error) {
+      console.error('Error fetching pets:', error);
+      Alert.alert('Error', 'Failed to fetch household pets');
+    } finally {
+      setLoadingPets(false);
     }
   };
 
@@ -610,6 +648,73 @@ export default function HouseholdScreen() {
     router.push('/household-setup/join');
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone. You will be removed from all households and all your data will be permanently deleted.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (!user) {
+                Alert.alert('Error', 'No user found');
+                return;
+              }
+
+              // Remove user from all households
+              const { error: membershipError } = await supabase
+                .from('memberships')
+                .delete()
+                .eq('account_id', user.id);
+
+              if (membershipError) {
+                console.error('Error removing memberships:', membershipError);
+              }
+
+              // Delete user's account record
+              const { error: accountError } = await supabase
+                .from('accounts')
+                .delete()
+                .eq('id', user.id);
+
+              if (accountError) {
+                console.error('Error deleting account:', accountError);
+              }
+
+              // Delete the auth user
+              const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
+
+              if (authError) {
+                console.error('Error deleting auth user:', authError);
+                Alert.alert('Error', 'Failed to delete account. Please try again.');
+                return;
+              }
+
+              Alert.alert('Account Deleted', 'Your account has been successfully deleted.', [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    signOut();
+                    router.replace('/auth/login');
+                  },
+                },
+              ]);
+            } catch (error) {
+              console.error('Error deleting account:', error);
+              Alert.alert('Error', 'Failed to delete account. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleSwitchHousehold = (householdId: string) => {
     selectHousehold(householdId);
   };
@@ -662,6 +767,9 @@ export default function HouseholdScreen() {
 
               if (membershipError) throw membershipError;
 
+              // Clear current household selection immediately
+              selectHousehold(null);
+              
               // Refresh households to update the UI
               await refreshHouseholds();
               
@@ -723,6 +831,9 @@ export default function HouseholdScreen() {
 
               if (householdError) throw householdError;
 
+              // Clear current household selection immediately
+              selectHousehold(null);
+              
               // Refresh households list
               await refreshHouseholds();
 
@@ -902,10 +1013,12 @@ export default function HouseholdScreen() {
         </View>
       </View>
 
-      {/* Members Section */}
+      {/* Members & Pets Section */}
       {currentHousehold && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Members</Text>
+          <Text style={styles.sectionTitle}>Members & Pets</Text>
+          
+          {/* Members Block */}
           <View style={styles.membersList}>
             <View style={styles.membersHeader}>
               <Text style={styles.membersTitle}>Members</Text>
@@ -919,11 +1032,6 @@ export default function HouseholdScreen() {
                     ageGroup: 'adult',
                     medicalNotes: '',
                     contactInfo: '',
-                    hasPet: false,
-                    petName: '',
-                    petType: '',
-                    petSize: 'medium',
-                    petNotes: '',
                   });
                   setShowMemberModal(true);
                 }}
@@ -988,35 +1096,17 @@ export default function HouseholdScreen() {
                       <TouchableOpacity
                         style={styles.memberActionButton}
                         onPress={() => {
-                          const loadMemberData = async () => {
-                            const nameParts = member.name.split(' ');
-                            setEditingMember(member);
-
-                            // Fetch associated pet if exists
-                            const { data: pets } = await supabase
-                              .from('pets')
-                              .select('*')
-                              .eq('household_id', currentHousehold?.id)
-                              .limit(1);
-
-                            const pet = pets?.[0];
-
-                            setMemberForm({
-                              firstName: nameParts[0] || '',
-                              lastName: nameParts.slice(1).join(' '),
-                              ageGroup: member.age_group,
-                              medicalNotes: member.medical_notes || '',
-                              contactInfo: member.contact_info ? 
-                                formatPhoneNumber(member.contact_info) : '',
-                              hasPet: !!pet,
-                              petName: pet?.name || '',
-                              petType: pet?.type || '',
-                              petSize: (pet?.size as 'small' | 'medium' | 'large') || 'medium',
-                              petNotes: pet?.medical_notes || '',
-                            });
-                            setShowMemberModal(true);
-                          };
-                          loadMemberData();
+                          const nameParts = member.name.split(' ');
+                          setEditingMember(member);
+                          setMemberForm({
+                            firstName: nameParts[0] || '',
+                            lastName: nameParts.slice(1).join(' '),
+                            ageGroup: member.age_group,
+                            medicalNotes: member.medical_notes || '',
+                            contactInfo: member.contact_info ? 
+                              formatPhoneNumber(member.contact_info) : '',
+                          });
+                          setShowMemberModal(true);
                         }}
                       >
                         <Edit3 size={16} color="#6B7280" />
@@ -1058,6 +1148,112 @@ export default function HouseholdScreen() {
                                     }
                                   } catch (error) {
                                     Alert.alert('Error', 'Failed to remove member');
+                                  }
+                                },
+                              }
+                            ]
+                          );
+                        }}
+                      >
+                        <X size={16} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* Pets Block */}
+          <View style={[styles.membersList, { marginTop: 16 }]}>
+            <View style={styles.membersHeader}>
+              <Text style={styles.membersTitle}>Pets</Text>
+              <TouchableOpacity 
+                style={styles.addButton}
+                onPress={() => {
+                  setEditingPet(null);
+                  setPetForm({
+                    name: '',
+                    type: 'Dog',
+                    size: 'medium',
+                    medicalNotes: '',
+                  });
+                  setShowPetModal(true);
+                }}
+              >
+                <Plus size={20} color="#354eab" />
+              </TouchableOpacity>
+            </View>
+            {loadingPets ? (
+              <View style={styles.loadingMembersContainer}>
+                <ActivityIndicator color={colors.buttonSecondary} />
+              </View>
+            ) : pets.length === 0 ? (
+              <View style={styles.emptyMembersContainer}>
+                <AlertCircle size={24} color="#6B7280" />
+                <Text style={styles.emptyMembersText}>No pets added yet</Text>
+              </View>
+            ) : (
+              <View>
+                {pets.map((pet) => (
+                  <View key={pet.id} style={styles.memberItem}>
+                    <View style={styles.memberAvatar}>
+                      <Text style={{ fontSize: 20 }}>🐾</Text>
+                    </View>
+                    <View style={styles.memberInfo}>
+                      <View style={styles.memberNameRow}>
+                        <Text style={styles.memberName}>{pet.name}</Text>
+                      </View>
+                      <Text style={styles.memberAgeGroup}>
+                        {pet.type} • {pet.size.charAt(0).toUpperCase() + pet.size.slice(1)}
+                      </Text>
+                      {pet.medical_notes && (
+                        <Text style={styles.memberDetail}>
+                          🏥 {pet.medical_notes}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.memberActions}>
+                      <TouchableOpacity
+                        style={styles.memberActionButton}
+                        onPress={() => {
+                          setEditingPet(pet);
+                          setPetForm({
+                            name: pet.name,
+                            type: pet.type,
+                            size: pet.size as 'small' | 'medium' | 'large',
+                            medicalNotes: pet.medical_notes || '',
+                          });
+                          setShowPetModal(true);
+                        }}
+                      >
+                        <Edit3 size={16} color="#6B7280" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.memberActionButton}
+                        onPress={() => {
+                          Alert.alert(
+                            'Remove Pet',
+                            'Are you sure you want to remove this pet?',
+                            [
+                              {
+                                text: 'Cancel',
+                                onPress: () => {},
+                                isPreferred: true
+                              },
+                              {
+                                text: 'Remove',
+                                onPress: async () => {
+                                  try {
+                                    const { error } = await supabase
+                                      .from('pets')
+                                      .delete()
+                                      .eq('id', pet.id);
+                                    
+                                    if (error) throw error;
+                                    await fetchPets();
+                                  } catch (error) {
+                                    Alert.alert('Error', 'Failed to remove pet');
                                   }
                                 },
                               }
@@ -1174,10 +1370,10 @@ export default function HouseholdScreen() {
 
           <TouchableOpacity 
             style={styles.menuItem}
-            onPress={() => Alert.alert('Settings', 'Settings will be implemented soon.')}
+            onPress={handleDeleteAccount}
           >
-            <Settings size={20} color="#6B7280" />
-            <Text style={styles.menuText}>Settings</Text>
+            <X size={20} color="#EF4444" />
+            <Text style={[styles.menuText, styles.deleteText]}>Delete Account</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -1293,87 +1489,6 @@ export default function HouseholdScreen() {
               />
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Has Pet?</Text>
-              <View style={styles.formSelect}>
-                {['yes', 'no'].map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    style={[
-                      styles.selectOption,
-                      (option === 'yes' && memberForm.hasPet) || (option === 'no' && !memberForm.hasPet) ? styles.selectOptionSelected : null
-                    ]}
-                    onPress={() => setMemberForm(prev => ({ ...prev, hasPet: option === 'yes' }))}
-                  >
-                    <Text style={[
-                      styles.selectOptionText,
-                      (option === 'yes' && memberForm.hasPet) || (option === 'no' && !memberForm.hasPet) ? styles.selectOptionTextSelected : null
-                    ]}>
-                      {option.charAt(0).toUpperCase() + option.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {memberForm.hasPet && (
-              <>
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Pet Name</Text>
-                  <TextInput
-                    style={styles.formInput}
-                    value={memberForm.petName}
-                    onChangeText={(text) => setMemberForm(prev => ({ ...prev, petName: text }))}
-                    placeholder="Enter pet name"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Pet Type</Text>
-                  <TextInput
-                    style={styles.formInput}
-                    value={memberForm.petType}
-                    onChangeText={(text) => setMemberForm(prev => ({ ...prev, petType: text }))}
-                    placeholder="Enter pet type (e.g., Dog, Cat)"
-                  />
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Pet Size</Text>
-                  <View style={styles.formSelect}>
-                    {['small', 'medium', 'large'].map((size) => (
-                      <TouchableOpacity
-                        key={size}
-                        style={[
-                          styles.selectOption,
-                          memberForm.petSize === size && styles.selectOptionSelected
-                        ]}
-                        onPress={() => setMemberForm(prev => ({ ...prev, petSize: size as typeof memberForm.petSize }))}
-                      >
-                        <Text style={[
-                          styles.selectOptionText,
-                          memberForm.petSize === size && styles.selectOptionTextSelected
-                        ]}>
-                          {size.charAt(0).toUpperCase() + size.slice(1)}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Pet Notes</Text>
-                  <TextInput
-                    style={[styles.formInput, { height: 100, textAlignVertical: 'top' }]}
-                    value={memberForm.petNotes}
-                    onChangeText={(text) => setMemberForm(prev => ({ ...prev, petNotes: text }))}
-                    placeholder="Enter any special needs or notes about the pet"
-                    multiline
-                    numberOfLines={4}
-                  />
-                </View>
-              </>
-            )}
 
             <TouchableOpacity
               style={[styles.submitButton, (!memberForm.firstName || !memberForm.lastName) && styles.submitButtonDisabled]}
@@ -1420,64 +1535,6 @@ export default function HouseholdScreen() {
                     if (memberError) throw memberError;
                   }
 
-                  // Handle pet data if member has a pet
-                  if (memberForm.hasPet && memberForm.petName && memberForm.petType) {
-                    const petData = {
-                      household_id: currentHousehold.id,
-                      name: memberForm.petName.trim(),
-                      type: memberForm.petType.trim(),
-                      size: memberForm.petSize,
-                      medical_notes: memberForm.petNotes || null,
-                    };
-
-                    if (editingMember) {
-                      // Check if pet already exists for this member/household
-                      const { data: existingPets } = await supabase
-                        .from('pets')
-                        .select('id')
-                        .eq('household_id', currentHousehold.id)
-                        .limit(1);
-
-                      if (existingPets && existingPets.length > 0) {
-                        // Update existing pet
-                        const { error: petError } = await supabase
-                          .from('pets')
-                          .update(petData)
-                          .eq('id', existingPets[0].id);
-
-                        if (petError) {
-                          console.error('Pet update error:', petError);
-                          throw petError;
-                        }
-                      } else {
-                        // Insert new pet
-                        const { error: petError } = await supabase
-                          .from('pets')
-                          .insert(petData);
-
-                        if (petError) {
-                          console.error('Pet insert error:', petError);
-                          throw petError;
-                        }
-                      }
-                    } else {
-                      // Insert new pet for new member
-                      const { error: petError } = await supabase
-                        .from('pets')
-                        .insert(petData);
-
-                      if (petError) {
-                        console.error('Pet insert error:', petError);
-                        throw petError;
-                      }
-                    }
-                  } else if (editingMember && !memberForm.hasPet) {
-                    // Delete pet if member no longer has one
-                    await supabase
-                      .from('pets')
-                      .delete()
-                      .eq('household_id', currentHousehold.id);
-                  }
 
                   await fetchMembers();
                   
@@ -1503,6 +1560,158 @@ export default function HouseholdScreen() {
             <TouchableOpacity
               style={styles.cancelButton}
               onPress={() => setShowMemberModal(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Pet Modal */}
+      <Modal
+        visible={showPetModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowPetModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.memberModal, { maxHeight: '80%', borderRadius: 12 }]}>
+          <View style={styles.memberModalHeader}>
+            <Text style={styles.memberModalTitle}>
+              {editingPet ? 'Edit Pet' : 'Add Pet'}
+            </Text>
+            <TouchableOpacity onPress={() => setShowPetModal(false)}>
+              <X size={24} color="#6B7280" />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.memberForm}>
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Pet Name *</Text>
+              <TextInput
+                style={styles.formInput}
+                value={petForm.name}
+                onChangeText={(text) => setPetForm(prev => ({ ...prev, name: text }))}
+                placeholder="Enter pet name"
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Pet Type *</Text>
+              <View style={styles.formSelect}>
+                {PET_TYPES.map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.selectOption,
+                      petForm.type === type && styles.selectOptionSelected
+                    ]}
+                    onPress={() => setPetForm(prev => ({ ...prev, type: type }))}
+                  >
+                    <Text style={[
+                      styles.selectOptionText,
+                      petForm.type === type && styles.selectOptionTextSelected
+                    ]}>
+                      {type}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Pet Size *</Text>
+              <View style={styles.formSelect}>
+                {['small', 'medium', 'large'].map((size) => (
+                  <TouchableOpacity
+                    key={size}
+                    style={[
+                      styles.selectOption,
+                      petForm.size === size && styles.selectOptionSelected
+                    ]}
+                    onPress={() => setPetForm(prev => ({ ...prev, size: size as typeof petForm.size }))}
+                  >
+                    <Text style={[
+                      styles.selectOptionText,
+                      petForm.size === size && styles.selectOptionTextSelected
+                    ]}>
+                      {size.charAt(0).toUpperCase() + size.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Medical Notes</Text>
+              <TextInput
+                style={[styles.formInput, { height: 100, textAlignVertical: 'top' }]}
+                value={petForm.medicalNotes}
+                onChangeText={(text) => setPetForm(prev => ({ ...prev, medicalNotes: text }))}
+                placeholder="Enter any special needs, allergies, or medical conditions"
+                multiline
+                numberOfLines={4}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.submitButton, (!petForm.name || !petForm.type) && styles.submitButtonDisabled]}
+              onPress={async () => {
+                if (!currentHousehold) return;
+
+                if (!petForm.name.trim()) {
+                  Alert.alert('Error', 'Pet name is required');
+                  return;
+                }
+
+                if (!petForm.type.trim()) {
+                  Alert.alert('Error', 'Pet type is required');
+                  return;
+                }
+
+                try {
+                  const petData = {
+                    household_id: currentHousehold.id,
+                    name: petForm.name.trim(),
+                    type: petForm.type.trim(),
+                    size: petForm.size,
+                    medical_notes: petForm.medicalNotes || null,
+                  };
+
+                  if (editingPet) {
+                    // Update existing pet
+                    const { error: petError } = await supabase
+                      .from('pets')
+                      .update(petData)
+                      .eq('id', editingPet.id);
+
+                    if (petError) {
+                      console.error('Pet update error:', petError);
+                      throw petError;
+                    }
+                  } else {
+                    // Create new pet
+                    const { error: petError } = await supabase
+                      .from('pets')
+                      .insert(petData);
+
+                    if (petError) throw petError;
+                  }
+
+                  await fetchPets();
+                  setShowPetModal(false);
+                } catch (error) {
+                  console.error('Error saving pet:', error);
+                  Alert.alert('Error', 'Failed to save pet information');
+                }
+              }}
+            >
+              <Text style={styles.submitButtonText}>Save Pet</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowPetModal(false)}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
@@ -2178,5 +2387,9 @@ const styles = StyleSheet.create({
   planDetail: {
     fontSize: 14,
     color: '#6b7280',
+  },
+  deleteText: {
+    color: '#EF4444',
+    fontWeight: '600',
   },
 });

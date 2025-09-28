@@ -280,6 +280,7 @@ interface Member {
   medicalNote?: string;
   contactInfo?: string;
   isPet?: boolean;
+  petType?: string;
 }
 
 const AGE_BANDS = [
@@ -288,6 +289,18 @@ const AGE_BANDS = [
   'Teen (13-17)',
   'Adult (18-64)',
   'Senior (65+)',
+];
+
+const PET_TYPES = [
+  'Dog',
+  'Cat',
+  'Bird',
+  'Fish',
+  'Rabbit',
+  'Hamster',
+  'Guinea Pig',
+  'Reptile',
+  'Other',
 ];
 
 export default function CreateHouseholdScreen() {
@@ -308,6 +321,7 @@ export default function CreateHouseholdScreen() {
     medicalNote: '',
     contactInfo: '',
     isPet: false,
+    petType: 'Dog',
   });
   
   // Creator information
@@ -320,7 +334,7 @@ export default function CreateHouseholdScreen() {
   });
   
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, clearNewUserFlag } = useAuth();
   const { refreshHouseholds } = useHousehold();
 
   // Filter countries based on search
@@ -360,6 +374,7 @@ export default function CreateHouseholdScreen() {
       medicalNote: '',
       contactInfo: '',
       isPet: false,
+      petType: 'Dog',
     });
     setShowAddMember(false);
   };
@@ -449,16 +464,32 @@ export default function CreateHouseholdScreen() {
 
       if (membershipError) throw membershipError;
 
-      // Add members
-      const memberInserts: any[] = members.map(member => ({
-        household_id: household.id,
-        name: `${member.firstName} ${member.lastName}`.trim(),
-        age_group: member.ageBand.split(' ')[0].toLowerCase(),
-        medical_notes: member.medicalNote || null,
-        contact_info: member.contactInfo ? 
-          member.contactInfo.replace(/\D/g, '') : null,
-        is_pet: member.isPet || false,
-      }));
+      // Separate members and pets
+      const memberInserts: any[] = [];
+      const petInserts: any[] = [];
+
+      members.forEach(member => {
+        if (member.isPet) {
+          // Add to pets table
+          petInserts.push({
+            household_id: household.id,
+            name: `${member.firstName} ${member.lastName}`.trim(),
+            type: member.petType || 'Dog',
+            size: 'medium', // Default size
+            medical_notes: member.medicalNote || null,
+          });
+        } else {
+          // Add to members table
+          memberInserts.push({
+            household_id: household.id,
+            name: `${member.firstName} ${member.lastName}`.trim(),
+            age_group: member.ageBand.split(' ')[0].toLowerCase(),
+            medical_notes: member.medicalNote || null,
+            contact_info: member.contactInfo ? 
+              member.contactInfo.replace(/\D/g, '') : null,
+          });
+        }
+      });
 
       // Add yourself as a member (linked to your account)
       memberInserts.push({
@@ -468,15 +499,26 @@ export default function CreateHouseholdScreen() {
         medical_notes: creatorInfo.medicalNote || null,
         contact_info: creatorInfo.contactInfo ? 
           creatorInfo.contactInfo.replace(/\D/g, '') : null,
-        is_pet: false,
         claimed_by: user.id,
       });
 
-      const { error: memberError } = await supabase
-        .from('members')
-        .insert(memberInserts);
+      // Insert members
+      if (memberInserts.length > 0) {
+        const { error: memberError } = await supabase
+          .from('members')
+          .insert(memberInserts);
 
-      if (memberError) throw memberError;
+        if (memberError) throw memberError;
+      }
+
+      // Insert pets
+      if (petInserts.length > 0) {
+        const { error: petError } = await supabase
+          .from('pets')
+          .insert(petInserts);
+
+        if (petError) throw petError;
+      }
 
       // Initialize donut status for all hazard types
       const hazardTypes = ['hurricane', 'wildfire', 'flood', 'earthquake', 'tornado', 'heat'];
@@ -506,6 +548,7 @@ export default function CreateHouseholdScreen() {
         {
           text: 'OK',
           onPress: async () => {
+            clearNewUserFlag();
             await refreshHouseholds();
             router.push('/(tabs)/dashboard');
           },
@@ -722,19 +765,35 @@ export default function CreateHouseholdScreen() {
             ))}
 
             {!showAddMember && (
-              <TouchableOpacity
-                style={[styles.addButton, styles.addButtonFullWidth]}
-                onPress={() => setShowAddMember(true)}
-              >
-                <Plus size={20} color="#354eab" />
-                <Text style={styles.addButtonText}>Add Member</Text>
-              </TouchableOpacity>
+              <View style={styles.addButtonsContainer}>
+                <TouchableOpacity
+                  style={[styles.addButton, styles.addMemberButton]}
+                  onPress={() => {
+                    setNewMember(prev => ({ ...prev, isPet: false }));
+                    setShowAddMember(true);
+                  }}
+                >
+                  <Plus size={20} color="#354eab" />
+                  <Text style={styles.addButtonText}>Add Member</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.addButton, styles.addPetButton]}
+                  onPress={() => {
+                    setNewMember(prev => ({ ...prev, isPet: true, petType: 'Dog' }));
+                    setShowAddMember(true);
+                  }}
+                >
+                  <Plus size={20} color="#354eab" />
+                  <Text style={styles.addButtonText}>Add Pet</Text>
+                </TouchableOpacity>
+              </View>
             )}
 
             {/* Add Member Form */}
             {showAddMember && (
               <View style={styles.addMemberForm}>
-                <Text style={styles.formTitle}>Add New Member</Text>
+                <Text style={styles.formTitle}>{newMember.isPet ? 'Add New Pet' : 'Add New Member'}</Text>
                 
                 <View style={styles.nameRow}>
                   <View style={[styles.inputGroup, styles.nameField]}>
@@ -761,28 +820,54 @@ export default function CreateHouseholdScreen() {
                   </View>
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Age Band *</Text>
-                  <View style={styles.ageBandContainer}>
-                    {AGE_BANDS.map((band) => (
-                      <TouchableOpacity
-                        key={band}
-                        style={[
-                          styles.ageBandButton,
-                          newMember.ageBand === band && styles.ageBandButtonSelected
-                        ]}
-                        onPress={() => setNewMember(prev => ({ ...prev, ageBand: band }))}
-                      >
-                        <Text style={[
-                          styles.ageBandText,
-                          newMember.ageBand === band && styles.ageBandTextSelected
-                        ]}>
-                          {band}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+
+                {!newMember.isPet ? (
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Age Band *</Text>
+                    <View style={styles.ageBandContainer}>
+                      {AGE_BANDS.map((band) => (
+                        <TouchableOpacity
+                          key={band}
+                          style={[
+                            styles.ageBandButton,
+                            newMember.ageBand === band && styles.ageBandButtonSelected
+                          ]}
+                          onPress={() => setNewMember(prev => ({ ...prev, ageBand: band }))}
+                        >
+                          <Text style={[
+                            styles.ageBandText,
+                            newMember.ageBand === band && styles.ageBandTextSelected
+                          ]}>
+                            {band}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
-                </View>
+                ) : (
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Pet Type *</Text>
+                    <View style={styles.ageBandContainer}>
+                      {PET_TYPES.map((type) => (
+                        <TouchableOpacity
+                          key={type}
+                          style={[
+                            styles.ageBandButton,
+                            newMember.petType === type && styles.ageBandButtonSelected
+                          ]}
+                          onPress={() => setNewMember(prev => ({ ...prev, petType: type }))}
+                        >
+                          <Text style={[
+                            styles.ageBandText,
+                            newMember.petType === type && styles.ageBandTextSelected
+                          ]}>
+                            {type}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Medical Note (Optional)</Text>
@@ -790,42 +875,29 @@ export default function CreateHouseholdScreen() {
                     style={styles.input}
                     value={newMember.medicalNote}
                     onChangeText={(text) => setNewMember(prev => ({ ...prev, medicalNote: text }))}
-                    placeholder="e.g., asthma inhaler"
+                    placeholder={newMember.isPet ? "e.g., allergies, medications" : "e.g., asthma inhaler"}
                     placeholderTextColor="#6b7280"
                     multiline
                   />
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Contact Info (Optional)</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={newMember.contactInfo}
-                    onChangeText={(text) => {
-                      const formatted = formatPhoneNumber(text);
-                      setNewMember(prev => ({ ...prev, contactInfo: formatted }));
-                    }}
-                    placeholder="(000) 000-0000"
-                    placeholderTextColor="#6b7280"
-                    keyboardType="phone-pad"
-                    maxLength={14}
-                  />
-                </View>
-
-                <View style={styles.checkboxContainer}>
-                  <TouchableOpacity
-                    style={styles.checkbox}
-                    onPress={() => setNewMember(prev => ({ ...prev, isPet: !prev.isPet }))}
-                  >
-                    <View style={[
-                      styles.checkboxInner,
-                      newMember.isPet && styles.checkboxChecked
-                    ]}>
-                      {newMember.isPet && <Text style={styles.checkmark}>✓</Text>}
-                    </View>
-                    <Text style={styles.checkboxLabel}>This is a pet</Text>
-                  </TouchableOpacity>
-                </View>
+                {!newMember.isPet && (
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Contact Info (Optional)</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={newMember.contactInfo}
+                      onChangeText={(text) => {
+                        const formatted = formatPhoneNumber(text);
+                        setNewMember(prev => ({ ...prev, contactInfo: formatted }));
+                      }}
+                      placeholder="(000) 000-0000"
+                      placeholderTextColor="#6b7280"
+                      keyboardType="phone-pad"
+                      maxLength={14}
+                    />
+                  </View>
+                )}
 
                 <View style={styles.formActions}>
                   <TouchableOpacity
@@ -838,51 +910,12 @@ export default function CreateHouseholdScreen() {
                     style={styles.saveButton}
                     onPress={addMember}
                   >
-                    <Text style={styles.saveButtonText}>Add Member</Text>
+                    <Text style={styles.saveButtonText}>{newMember.isPet ? 'Add Pet' : 'Add Member'}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
           </View>
-
-          {/* Invite Housemates */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Invite Housemates (Optional)</Text>
-            <Text style={styles.sectionDescription}>
-              Send invitations to people who will live in this household
-            </Text>
-            
-            {inviteEmails.map((email, index) => (
-              <View key={index} style={styles.inviteRow}>
-                <TextInput
-                  style={styles.inviteInput}
-                  value={email}
-                  onChangeText={(text) => updateInviteEmail(index, text)}
-                  placeholder="Enter email address"
-                  placeholderTextColor="#6b7280"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-                {inviteEmails.length > 1 && (
-                  <TouchableOpacity
-                    style={styles.removeInviteButton}
-                    onPress={() => removeInviteEmail(index)}
-                  >
-                    <X size={20} color="#354eab" />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
-            
-            <TouchableOpacity
-              style={styles.addInviteButton}
-              onPress={addInviteEmail}
-            >
-              <Plus size={20} color="#354eab" />
-              <Text style={styles.addInviteButtonText}>Add Another Email</Text>
-            </TouchableOpacity>
-          </View>
-
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleCreate}
@@ -1265,5 +1298,16 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  addButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  addMemberButton: {
+    flex: 1,
+  },
+  addPetButton: {
+    flex: 1,
   },
 });
