@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { ArrowLeft, AlertTriangle, Wind, Flame, Droplets, Mountain, Tornado, Sun, Plus } from 'lucide-react-native';
 import { colors } from '@/lib/theme';
+import { useRouter } from 'expo-router';
 
 const { height } = Dimensions.get('window');
 
@@ -154,6 +155,7 @@ const hazardSpecificAreas: Record<string, Array<{ title: string; description: st
 };
 
 export default function DisasterDetailModal({ visible, onClose, hazardType, readinessPercentage, onViewChecklist }: DisasterDetailModalProps) {
+  const router = useRouter();
   const config = hazardConfig[hazardType] || hazardConfig.hurricane;
   const Icon = config.icon;
 
@@ -226,63 +228,6 @@ export default function DisasterDetailModal({ visible, onClose, hazardType, read
             </View>
           </View>
 
-          {/* Preparation Tips - Hazard Specific */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Essential Preparation Tips</Text>
-            <View style={styles.tipsList}>
-              {(preparationTips[hazardType] || preparationTips.hurricane).map((tip, index) => (
-                <View key={index} style={styles.tipItem}>
-                  <View style={[
-                    styles.tipPriorityIndicator, 
-                    { 
-                      backgroundColor: tip.priority === 'high' ? '#8B5CF6' : 
-                                     tip.priority === 'medium' ? '#6366F1' : '#A855F7'
-                    }
-                  ]} />
-                  <View style={styles.tipContent}>
-                    <Text style={styles.tipTitle}>{tip.title}</Text>
-                    <Text style={styles.tipDescription}>{tip.description}</Text>
-                    <View style={[
-                      styles.priorityBadge,
-                      {
-                        backgroundColor: tip.priority === 'high' ? '#EDE9FE' : 
-                                       tip.priority === 'medium' ? '#E0E7FF' : '#F3E8FF'
-                      }
-                    ]}>
-                      <Text style={[
-                        styles.priorityText,
-                        {
-                          color: tip.priority === 'high' ? '#6B46C1' : 
-                               tip.priority === 'medium' ? '#4F46E5' : '#7C3AED'
-                        }
-                      ]}>
-                        {tip.priority.toUpperCase()} PRIORITY
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Key Preparedness Areas */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{config.label} Preparedness Areas</Text>
-            <View style={styles.areasList}>
-              {(hazardSpecificAreas[hazardType] || hazardSpecificAreas.hurricane).map((area, index) => (
-                <View key={index} style={styles.areaItem}>
-                  <View style={[styles.areaIcon, { backgroundColor: area.color + '20' }]}>
-                    <Text style={styles.areaEmoji}>{area.icon}</Text>
-                  </View>
-                  <View style={styles.areaContent}>
-                    <Text style={styles.areaTitle}>{area.title}</Text>
-                    <Text style={styles.areaDescription}>{area.description}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-
           {/* Quick Actions */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -296,15 +241,83 @@ export default function DisasterDetailModal({ visible, onClose, hazardType, read
                   }
                 }}
               >
-                <Text style={styles.primaryActionText}>📋 View Checklist</Text>
-                <Text style={[styles.actionSubtext, { color: '#C7D2FE' }]}>See what supplies you need</Text>
+                <Text style={styles.primaryActionText}>View Checklist</Text>
+                <Text style={[styles.actionSubtext, { color: '#ffffff' }]}>See what supplies you need</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryActionButton}>
-                <Text style={styles.secondaryActionText}>📦 Update Supplies</Text>
-                <Text style={[styles.actionSubtext, { color: '#6B46C1' }]}>Add items to inventory</Text>
+              <TouchableOpacity 
+                style={styles.secondaryActionButton}
+                onPress={() => {
+                  onClose();
+                  router.push('/(tabs)/inventory');
+                }}
+              >
+                <Text style={styles.secondaryActionText}>Update Supplies</Text>
+                <Text style={[styles.actionSubtext, { color: colors.primary }]}>Add items to inventory</Text>
               </TouchableOpacity>
+                </View>
+              </View>
+
+          {/* Preparation Tips - Hazard Specific */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Essential Preparation Tips</Text>
+            <View style={styles.tipsList}>
+              {(preparationTips[hazardType] || preparationTips.hurricane).map((tip, index) => (
+                <View key={index} style={styles.tipItem}>
+                  <View style={[
+                    styles.tipPriorityIndicator, 
+                    { 
+                      backgroundColor: tip.priority === 'high' ? colors.primary : 
+                                     tip.priority === 'medium' ? colors.primary + '80' : colors.primary + '40'
+                    }
+                  ]} />
+                  <View style={styles.tipContent}>
+                    <Text style={styles.tipTitle}>{tip.title}</Text>
+                    <Text style={styles.tipDescription}>{tip.description}</Text>
+                    <View style={[
+                      styles.priorityBadge,
+                      {
+                        backgroundColor: tip.priority === 'high' ? colors.primary + '20' : 
+                                       tip.priority === 'medium' ? colors.primary + '15' : colors.primary + '10'
+                      }
+                    ]}>
+                      <Text style={[
+                        styles.priorityText,
+                        {
+                          color: tip.priority === 'high' ? colors.primary : 
+                               tip.priority === 'medium' ? colors.primary : colors.primary
+                        }
+                      ]}>
+                        {tip.priority.toUpperCase()} PRIORITY
+                  </Text>
+                </View>
+              </View>
+                </View>
+              ))}
+                </View>
+              </View>
+
+          {/* Key Preparedness Areas */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{config.label} Preparedness Areas</Text>
+            <View style={styles.areasList}>
+              {(hazardSpecificAreas[hazardType] || hazardSpecificAreas.hurricane).map((area, index) => (
+                <View key={index} style={styles.areaItem}>
+                  <View style={[styles.areaIcon, { 
+                    backgroundColor: colors.primary + '20',
+                    borderColor: colors.primary,
+                    borderWidth: 2,
+                  }]}>
+                    <Text style={styles.areaNumber}>{index + 1}</Text>
+                </View>
+                <View style={styles.areaContent}>
+                    <Text style={styles.areaTitle}>{area.title}</Text>
+                    <Text style={styles.areaDescription}>{area.description}</Text>
+              </View>
+                </View>
+              ))}
             </View>
           </View>
+
 
         </ScrollView>
       </View>
@@ -412,6 +425,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 20,
+    borderWidth: 2,
+    borderColor: colors.primary,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -423,7 +438,7 @@ const styles = StyleSheet.create({
   },
   descriptionText: {
     fontSize: 16,
-    color: '#374151',
+    color: colors.secondary,
     lineHeight: 24,
   },
   areasList: {
@@ -434,6 +449,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
+    borderColor: colors.primary,
+    borderWidth: 2,
+    opacity: 0.85,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -451,8 +469,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  areaEmoji: {
-    fontSize: 20,
+  areaNumber: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.primary,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   areaContent: {
     flex: 1,
@@ -472,10 +494,10 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   primaryActionButton: {
-    backgroundColor: '#8B5CF6',
+    backgroundColor: colors.primary,
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#8B5CF6',
+    shadowColor: colors.primary,
     shadowOffset: {
       width: 0,
       height: 4,
@@ -485,8 +507,8 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   secondaryActionButton: {
-    backgroundColor: '#EDE9FE',
-    borderColor: '#8B5CF6',
+    backgroundColor: colors.secondary + '20',
+    borderColor: colors.primary,
     borderWidth: 2,
     borderRadius: 16,
     padding: 20,
@@ -498,7 +520,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   secondaryActionText: {
-    color: '#8B5CF6',
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 4,
@@ -538,6 +560,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
+    borderWidth: 1,
+    borderColor: colors.primary + '20',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -558,12 +582,12 @@ const styles = StyleSheet.create({
   tipTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1f2937',
+    color: colors.primary,
     marginBottom: 6,
   },
   tipDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: colors.secondary,
     lineHeight: 20,
     marginBottom: 8,
   },
