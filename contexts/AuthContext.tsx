@@ -6,9 +6,11 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  isNewUser: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string) => Promise<{ error: any; isNewUser?: boolean }>;
   signOut: () => Promise<{ error: any }>;
+  clearNewUserFlag: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,6 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
     // Get initial session
@@ -51,12 +54,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
     });
+    
+    if (!result.error && result.data.user) {
+      setIsNewUser(true);
+      return { error: result.error, isNewUser: true };
+    }
+    
     return { error: result.error };
   };
 
   const signOut = async () => {
     const result = await supabase.auth.signOut();
+    setIsNewUser(false);
     return { error: result.error };
+  };
+
+  const clearNewUserFlag = () => {
+    setIsNewUser(false);
   };
 
   return (
@@ -65,9 +79,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         user,
         loading,
+        isNewUser,
         signIn,
         signUp,
         signOut,
+        clearNewUserFlag,
       }}
     >
       {children}

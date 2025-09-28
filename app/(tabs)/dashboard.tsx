@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { supabase, Tables } from '@/lib/supabase';
 import { useHousehold } from '@/contexts/HouseholdContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useMap } from '@/contexts/MapContext';
 import DisasterDetailModal from '@/components/DisasterDetailModal';
 import { colors } from '@/lib/theme';
@@ -48,7 +49,8 @@ const hazardConfig: Record<string, { icon: any; label: string; color: string }> 
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const { currentHousehold } = useHousehold();
+  const { currentHousehold, households, loading: householdLoading } = useHousehold();
+  const { user, isNewUser, clearNewUserFlag } = useAuth();
   const { disasterData, loading: mapLoading } = useMap();
   const [donutData, setDonutData] = useState<DonutData[]>([]);
   const [nextBestActions, setNextBestActions] = useState<Tables<'nba_actions'>[]>([]);
@@ -56,6 +58,24 @@ export default function DashboardScreen() {
   const [selectedDisaster, setSelectedDisaster] = useState<{ type: string; percentage: number } | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [activeAlert, setActiveAlert] = useState<any>(null);
+
+  // Handle new user routing
+  useEffect(() => {
+    if (!householdLoading && user) {
+      if (isNewUser) {
+        // New user should go to household setup index to choose
+        clearNewUserFlag();
+        router.replace('/household-setup');
+        return;
+      }
+      
+      if (households.length === 0) {
+        // Existing user with no households should choose to create or join
+        router.replace('/household-setup');
+        return;
+      }
+    }
+  }, [user, isNewUser, households, householdLoading]);
 
   useEffect(() => {
     if (currentHousehold) {
