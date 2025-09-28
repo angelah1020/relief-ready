@@ -51,7 +51,7 @@ export interface FEMAShelter {
   phone: string;
   capacity: number;
   currentOccupancy: number;
-  status: 'Open' | 'Closed' | 'Full' | 'Limited';
+  status: 'open' | 'closed' | 'full' | 'alert' | 'standby' | 'limited';
   services: string[];
   accessibility: boolean;
   petFriendly: boolean;
@@ -60,6 +60,7 @@ export interface FEMAShelter {
 
 class FEMAApi {
   private baseUrl = 'https://www.fema.gov/api/open/v2';
+  private allSheltersUrl = 'https://gis.fema.gov/arcgis/rest/services/NSS/FEMA_NSS/MapServer/5/query';
 
   /**
    * Get recent disaster declarations
@@ -124,47 +125,184 @@ class FEMAApi {
   }
 
   /**
-   * Mock shelter data (FEMA doesn't provide real-time shelter API)
-   * In production, this would integrate with Red Cross or local emergency management APIs
+   * Fetch all shelter types from FEMA's unified Shelter Locations API
+   * This endpoint includes OPEN, CLOSED, FULL, ALERT, STANDBY, and other status types
    */
-  getMockShelters(latitude: number, longitude: number, radius: number = 50): FEMAShelter[] {
-    // Generate mock shelters around the given location
-    const shelters: FEMAShelter[] = [];
-    const shelterTypes = [
-      'Community Center',
-      'High School Gymnasium', 
-      'Church Fellowship Hall',
-      'Recreation Center',
-      'Convention Center',
-      'Emergency Shelter',
-    ];
-
-    for (let i = 0; i < 5; i++) {
-      const latOffset = (Math.random() - 0.5) * (radius / 69); // Roughly convert miles to degrees
-      const lonOffset = (Math.random() - 0.5) * (radius / 54.6);
+  async fetchAllShelters(boundingBox?: {
+    minLat: number;
+    minLng: number;
+    maxLat: number;
+    maxLng: number;
+  }): Promise<FEMAShelter[]> {
+    try {
+      // Include all shelter types to show current shelter infrastructure
+      // Note: During non-emergency periods, most shelters will be in "CLOSED" status
+      let url = `${this.allSheltersUrl}?where=1=1&outFields=*&f=json&resultRecordCount=2000`;
       
-      shelters.push({
-        id: `shelter_${i + 1}`,
-        name: `${shelterTypes[i % shelterTypes.length]} - Site ${i + 1}`,
-        address: `${100 + i * 50} Main Street`,
-        city: 'Emergency City',
-        state: 'ST',
-        zipCode: `${12345 + i}`,
-        latitude: latitude + latOffset,
-        longitude: longitude + lonOffset,
-        phone: `(555) ${String(Math.floor(Math.random() * 900) + 100)}-${String(Math.floor(Math.random() * 9000) + 1000)}`,
-        capacity: Math.floor(Math.random() * 200) + 50,
-        currentOccupancy: Math.floor(Math.random() * 150),
-        status: ['Open', 'Limited', 'Full'][Math.floor(Math.random() * 3)] as 'Open' | 'Limited' | 'Full',
-        services: this.getRandomServices(),
-        accessibility: Math.random() > 0.3,
-        petFriendly: Math.random() > 0.5,
-        lastUpdated: new Date().toISOString(),
-      });
+      // Add spatial filter if bounding box provided
+      if (boundingBox) {
+        const geometry = `${boundingBox.minLng},${boundingBox.minLat},${boundingBox.maxLng},${boundingBox.maxLat}`;
+        url += `&geometry=${geometry}&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects`;
+        console.log('Shelter API URL with spatial filter:', url);
+      } else {
+        console.log('Shelter API URL (no spatial filter):', url);
+      }
+
+      console.log('Fetching FEMA Shelters from unified API:', url);
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch FEMA Shelters: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.features || !Array.isArray(data.features)) {
+        console.warn('No shelter features found in response');
+        return [];
+      }
+
+      console.log(`Found ${data.features.length} total shelters from FEMA API`);
+      
+      return data.features.map((feature: any) => this.mapUnifiedShelterFeatureToFEMAShelter(feature))
+        .filter((shelter: FEMAShelter | null) => shelter !== null) as FEMAShelter[];
+      
+    } catch (error) {
+      console.warn('FEMA Shelter Locations API unavailable:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Map unified Shelter Locations ArcGIS feature to FEMAShelter interface
+   */
+  private mapUnifiedShelterFeatureToFEMAShelter(feature: any): FEMAShelter | null {
+    const attrs = feature.attributes;
+    
+    // Validate required fields
+    if (!attrs.shelter_id || !attrs.latitude || !attrs.longitude) {
+      console.warn('Invalid shelter data: missing required fields', attrs);
+      return null;
     }
 
-    return shelters;
+    return {
+      id: attrs.shelter_id.toString(),
+      name: attrs.shelter_name || 'Unnamed Shelter',
+      address: this.buildAddress(attrs),
+      city: attrs.city || '',
+      state: attrs.state || '',
+      zipCode: attrs.zip || '',
+      latitude: attrs.latitude,
+      longitude: attrs.longitude,
+      phone: this.formatPhone(attrs.org_main_phone || attrs.org_hotline_phone || attrs.org_other_phone),
+      capacity: attrs.evacuation_capacity || attrs.post_impact_capacity || 0,
+      currentOccupancy: attrs.total_population || 0,
+      status: this.mapUnifiedShelterStatus(attrs.shelter_status_code),
+      services: this.extractServices(attrs),
+      accessibility: this.checkAccessibility(attrs),
+      petFriendly: this.checkPetFriendly(attrs),
+      lastUpdated: new Date().toISOString(),
+    };
   }
+
+  /**
+   * Build full address from components
+   */
+  private buildAddress(attrs: any): string {
+    const parts = [attrs.address_1, attrs.city, attrs.state, attrs.zip].filter(Boolean);
+    return parts.join(', ');
+  }
+
+  /**
+   * Format phone number
+   */
+  private formatPhone(phone: string | null | undefined): string {
+    if (!phone) return '';
+    
+    // Clean the phone number and format if it's 10 digits
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 10) {
+      return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    }
+    return phone;
+  }
+
+  /**
+   * Map unified shelter status code to our status enum
+   * Handles all status codes from the Shelter Locations API
+   */
+  private mapUnifiedShelterStatus(statusCode: string | null | undefined): FEMAShelter['status'] {
+    if (!statusCode) return 'closed';
+    
+    switch (statusCode.toUpperCase()) {
+      case 'OPEN': 
+        return 'open';
+      case 'FULL':
+        return 'full';
+      case 'ALERT':
+        return 'alert';
+      case 'STANDBY':
+        return 'standby';
+      case 'CLOSED':
+        return 'closed';
+      default:
+        return 'limited'; // For any unknown status codes
+    }
+  }
+
+  /**
+   * Extract available services from shelter attributes
+   */
+  private extractServices(attrs: any): string[] {
+    const services: string[] = [];
+    
+    // Basic shelter service
+    services.push('Emergency Shelter');
+    
+    // Check for specific services based on available fields
+    if (attrs.generator_onsite === 'Y' || attrs.self_sufficient_electricity === 'Y') {
+      services.push('Electricity/Charging');
+    }
+    
+    if (attrs.pet_accommodations_code && attrs.pet_accommodations_code !== 'NONE') {
+      services.push('Pet Accommodation');
+    }
+    
+    if (attrs.evacuation_capacity > 0) {
+      services.push('Evacuation Services');
+    }
+    
+    if (attrs.post_impact_capacity > 0) {
+      services.push('Post-Impact Housing');
+    }
+    
+    // Add organization services if available
+    if (attrs.org_organization_name) {
+      services.push('Organization Support');
+    }
+    
+    if (attrs.org_hotline_phone) {
+      services.push('Hotline Support');
+    }
+
+    return services;
+  }
+
+  /**
+   * Check accessibility features
+   */
+  private checkAccessibility(attrs: any): boolean {
+    return attrs.ada_compliant === 'Y' || attrs.wheelchair_accessible === 'Y';
+  }
+
+  /**
+   * Check pet-friendly status
+   */
+  private checkPetFriendly(attrs: any): boolean {
+    return !!(attrs.pet_accommodations_code && attrs.pet_accommodations_code !== 'NONE');
+  }
+
+
 
   /**
    * Get random services for mock shelters
@@ -193,11 +331,13 @@ class FEMAApi {
    */
   getShelterStatusColor(status: string): string {
     switch (status.toLowerCase()) {
-      case 'open': return '#00FF00';     // Green
-      case 'limited': return '#FFFF00'; // Yellow  
-      case 'full': return '#FF6600';    // Orange
-      case 'closed': return '#FF0000';  // Red
-      default: return '#808080';        // Gray
+      case 'open': return '#00FF00';     // Green - currently accepting people
+      case 'alert': return '#FFA500';   // Orange - ready for activation
+      case 'standby': return '#FFD700'; // Gold - on standby
+      case 'full': return '#FF6600';    // Dark Orange - at capacity
+      case 'limited': return '#FFFF00'; // Yellow - limited availability
+      case 'closed': return '#FF0000';  // Red - not available
+      default: return '#808080';        // Gray - unknown status
     }
   }
 

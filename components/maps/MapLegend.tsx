@@ -73,8 +73,20 @@ export default function MapLegend() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🔥 Wildfires</Text>
         <View style={styles.legendRow}>
+          <View style={[styles.colorBox, { backgroundColor: '#8B0000' }]} />
+          <Text style={styles.legendText}>Extreme</Text>
+        </View>
+        <View style={styles.legendRow}>
+          <View style={[styles.colorBox, { backgroundColor: '#FF0000' }]} />
+          <Text style={styles.legendText}>High</Text>
+        </View>
+        <View style={styles.legendRow}>
           <View style={[styles.colorBox, { backgroundColor: '#FF4500' }]} />
-          <Text style={styles.legendText}>Active Fire</Text>
+          <Text style={styles.legendText}>Moderate</Text>
+        </View>
+        <View style={styles.legendRow}>
+          <View style={[styles.colorBox, { backgroundColor: '#FF8C00' }]} />
+          <Text style={styles.legendText}>Low</Text>
         </View>
       </View>
 
@@ -105,18 +117,30 @@ export default function MapLegend() {
 
       {/* Shelters */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Shelters</Text>
+        <Text style={styles.sectionTitle}>🏠 Shelters</Text>
         <View style={styles.legendRow}>
-          <View style={[styles.colorBox, { backgroundColor: '#00FF00' }]} />
+          <Text style={styles.emojiIcon}>🏠</Text>
           <Text style={styles.legendText}>Open</Text>
         </View>
         <View style={styles.legendRow}>
-          <View style={[styles.colorBox, { backgroundColor: '#FFFF00' }]} />
+          <Text style={styles.emojiIcon}>🚨</Text>
+          <Text style={styles.legendText}>Alert</Text>
+        </View>
+        <View style={styles.legendRow}>
+          <Text style={styles.emojiIcon}>⏸️</Text>
+          <Text style={styles.legendText}>Standby</Text>
+        </View>
+        <View style={styles.legendRow}>
+          <Text style={styles.emojiIcon}>🏘️</Text>
           <Text style={styles.legendText}>Limited</Text>
         </View>
         <View style={styles.legendRow}>
-          <View style={[styles.colorBox, { backgroundColor: '#FF6600' }]} />
+          <Text style={styles.emojiIcon}>🏢</Text>
           <Text style={styles.legendText}>Full</Text>
+        </View>
+        <View style={styles.legendRow}>
+          <Text style={styles.emojiIcon}>🚫</Text>
+          <Text style={styles.legendText}>Closed</Text>
         </View>
       </View>
     </View>
@@ -178,5 +202,11 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     flex: 1,
     flexWrap: 'wrap',
+  },
+  emojiIcon: {
+    fontSize: 8,
+    marginRight: 4,
+    width: 11,
+    textAlign: 'center',
   },
 });

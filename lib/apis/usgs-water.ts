@@ -57,8 +57,35 @@ class USGSWaterApi {
     maxLongitude: number
   ): Promise<USGSWaterSite[]> {
     try {
-      const bbox = `${minLongitude},${minLatitude},${maxLongitude},${maxLatitude}`;
+      // USGS API has bounding box size limitations (max ~2.9 degrees width)
+      // If the requested area is too large, limit it to a reasonable size
+      const maxLatDelta = 2.5; // degrees
+      const maxLngDelta = 2.5; // degrees
+      
+      let adjustedMinLat = minLatitude;
+      let adjustedMaxLat = maxLatitude;
+      let adjustedMinLng = minLongitude;
+      let adjustedMaxLng = maxLongitude;
+      
+      // Calculate center point
+      const centerLat = (minLatitude + maxLatitude) / 2;
+      const centerLng = (minLongitude + maxLongitude) / 2;
+      
+      // If bounding box is too large, create a smaller one centered on the region
+      if ((maxLatitude - minLatitude) > maxLatDelta) {
+        adjustedMinLat = centerLat - maxLatDelta / 2;
+        adjustedMaxLat = centerLat + maxLatDelta / 2;
+      }
+      
+      if ((maxLongitude - minLongitude) > maxLngDelta) {
+        adjustedMinLng = centerLng - maxLngDelta / 2;
+        adjustedMaxLng = centerLng + maxLngDelta / 2;
+      }
+      
+      const bbox = `${adjustedMinLng},${adjustedMinLat},${adjustedMaxLng},${adjustedMaxLat}`;
       const url = `${this.baseUrl}?format=json&bBox=${bbox}&parameterCd=00065&siteStatus=active`;
+      
+      console.log(`Fetching flood gauges with bbox: ${bbox} (original: ${minLongitude},${minLatitude},${maxLongitude},${maxLatitude})`);
       
       const response = await fetch(url, {
         headers: {
@@ -67,11 +94,15 @@ class USGSWaterApi {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.warn(`USGS Water API error: ${response.status} ${response.statusText}`, errorText);
         throw new Error(`USGS Water API error: ${response.status} ${response.statusText}`);
       }
 
       const data: USGSWaterResponse = await response.json();
-      return this.parseWaterData(data);
+      const gauges = this.parseWaterData(data);
+      console.log(`Fetched ${gauges.length} flood gauges from USGS API`);
+      return gauges;
     } catch (error) {
       console.warn('USGS Water API unavailable, using mock data:', error);
       return this.getMockFloodGauges(minLatitude, maxLatitude, minLongitude, maxLongitude);

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { nwsApi, NWSAlert } from '@/lib/apis/nws';
+import { nwsApi, NWSAlert, HurricaneAlert } from '@/lib/apis/nws';
 import { usgsApi, USGSEarthquake } from '@/lib/apis/usgs';
 import { nasaApi, NASAFireHotspot } from '@/lib/apis/nasa';
 import { femaApi, FEMAShelter } from '@/lib/apis/fema';
@@ -25,6 +25,7 @@ export interface LayerConfig {
 
 export interface DisasterData {
   alerts: NWSAlert[];
+  hurricanes: HurricaneAlert[];
   earthquakes: USGSEarthquake[];
   wildfires: NASAFireHotspot[];
   shelters: FEMAShelter[];
@@ -61,7 +62,7 @@ const MapContext = createContext<MapContextType | undefined>(undefined);
 
 const DEFAULT_LAYERS: LayerConfig[] = [
   { id: 'alerts', name: 'Weather Alerts', enabled: true, icon: '⚠️', color: '#FF6600' },
-  { id: 'hurricanes', name: 'Hurricanes', enabled: true, icon: '🌧️', color: '#8B00FF' },
+  { id: 'hurricanes', name: 'Hurricanes', enabled: true, icon: '🌀', color: '#8B00FF' },
   { id: 'earthquakes', name: 'Earthquakes', enabled: true, icon: '🌍', color: '#8B4513' },
   { id: 'wildfires', name: 'Wildfires', enabled: true, icon: '🔥', color: '#FF4500' },
   { id: 'floods', name: 'Floods', enabled: true, icon: '🌊', color: '#1E40AF' },
@@ -90,6 +91,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
   const [layers, setLayers] = useState<LayerConfig[]>(DEFAULT_LAYERS);
   const [disasterData, setDisasterData] = useState<DisasterData>({
     alerts: [],
+    hurricanes: [],
     earthquakes: [],
     wildfires: [],
     shelters: [],
@@ -99,8 +101,6 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [locationPermission, setLocationPermission] = useState(false);
   
-  // Ref to track if shelters have been generated for current location
-  const sheltersGeneratedRef = useRef<string | null>(null);
 
   // Derived household location
   const householdLocation = currentHousehold && currentHousehold.latitude && currentHousehold.longitude
@@ -207,6 +207,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
       console.log('Enabled layers:', enabledLayers.map(l => l.id));
       const newData: DisasterData = {
         alerts: [],
+        hurricanes: [],
         earthquakes: [],
         wildfires: [],
         shelters: [],
@@ -216,11 +217,22 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
       // Fetch data for enabled layers
       const promises = [];
 
-      if (enabledLayers.some(l => ['alerts', 'hurricanes'].includes(l.id))) {
+      if (enabledLayers.some(l => l.id === 'alerts')) {
         promises.push(
           nwsApi.getActiveAlerts()
             .then(response => { newData.alerts = response.features; })
             .catch(error => console.warn('Failed to fetch NWS alerts:', error))
+        );
+      }
+
+      if (enabledLayers.some(l => l.id === 'hurricanes')) {
+        promises.push(
+          nwsApi.getHurricaneAlerts()
+            .then(hurricanes => { 
+              newData.hurricanes = hurricanes;
+              console.log(`Fetched ${hurricanes.length} hurricane alerts`);
+            })
+            .catch(error => console.warn('Failed to fetch hurricane alerts:', error))
         );
       }
 
@@ -233,10 +245,19 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (enabledLayers.some(l => l.id === 'wildfires')) {
+        // Create bounding box around map region for efficient fire data retrieval
+        const fireBoundingBox = {
+          west: mapRegion.longitude - mapRegion.longitudeDelta * 2,
+          south: mapRegion.latitude - mapRegion.latitudeDelta * 2,
+          east: mapRegion.longitude + mapRegion.longitudeDelta * 2,
+          north: mapRegion.latitude + mapRegion.latitudeDelta * 2,
+        };
+        
         promises.push(
-          nasaApi.getActiveFiresVIIRS()
+          nasaApi.getActiveFiresVIIRS(fireBoundingBox, 7) // Get fires from past 7 days
             .then(fires => { 
               newData.wildfires = fires;
+              console.log(`Fetched ${fires.length} fire hotspots from FIRMS API`);
             })
             .catch(error => console.warn('Failed to fetch wildfires:', error))
         );
@@ -255,24 +276,32 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
         );
       }
 
-      if (enabledLayers.some(l => l.id === 'shelters') && householdLocation) {
-        console.log('Shelters layer enabled, household location:', householdLocation);
-        // Only regenerate shelters if location changed
-        const locationKey = `${householdLocation.latitude},${householdLocation.longitude}`;
-        if (sheltersGeneratedRef.current !== locationKey) {
-          console.log('Generating new shelters for location:', locationKey);
-          newData.shelters = femaApi.getMockShelters(
-            householdLocation.latitude,
-            householdLocation.longitude
-          );
-          console.log('Generated shelters:', newData.shelters);
-          sheltersGeneratedRef.current = locationKey;
-        } else {
-          console.log('Reusing existing shelters:', disasterData.shelters);
-          newData.shelters = disasterData.shelters; // Reuse existing shelters
-        }
+      if (enabledLayers.some(l => l.id === 'shelters')) {
+        console.log('Shelters layer enabled, fetching FEMA Alert Shelters...');
+        
+        // Create bounding box around map region for efficient API query
+        const boundingBox = {
+          minLat: mapRegion.latitude - mapRegion.latitudeDelta,
+          maxLat: mapRegion.latitude + mapRegion.latitudeDelta,
+          minLng: mapRegion.longitude - mapRegion.longitudeDelta,
+          maxLng: mapRegion.longitude + mapRegion.longitudeDelta,
+        };
+        
+        console.log('Fetching shelters with bounding box:', boundingBox);
+        
+        promises.push(
+          femaApi.fetchAllShelters(boundingBox)
+            .then(shelters => { 
+              newData.shelters = shelters;
+              console.log(`Fetched ${shelters.length} FEMA Shelters (unified Shelter Locations API)`);
+            })
+            .catch(error => {
+              console.warn('Failed to fetch FEMA Shelters:', error);
+              newData.shelters = [];
+            })
+        );
       } else {
-        console.log('Shelters not enabled or no household location. Enabled:', enabledLayers.some(l => l.id === 'shelters'), 'Location:', householdLocation);
+        console.log('Shelters layer not enabled');
       }
 
       await Promise.all(promises);
@@ -285,7 +314,34 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [layers, householdLocation?.latitude, householdLocation?.longitude, loading]);
+  }, [layers, mapRegion, loading]);
+
+  // Store refreshData in a ref to avoid dependency issues
+  const refreshDataRef = useRef(refreshData);
+  refreshDataRef.current = refreshData;
+
+  // Trigger initial data load
+  useEffect(() => {
+    refreshDataRef.current();
+  }, []); // Only run on mount
+
+  // Trigger refresh when layers are toggled
+  useEffect(() => {
+    if (layers.some(l => l.enabled) && !loading) {
+      refreshDataRef.current();
+    }
+  }, [layers.map(l => l.enabled).join(',')]);
+
+  // Debounced refresh for map region changes (only position, not deltas)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (layers.some(l => l.enabled) && !loading) {
+        refreshDataRef.current();
+      }
+    }, 1500); // Wait 1.5 seconds after map stops moving
+
+    return () => clearTimeout(timeoutId);
+  }, [mapRegion.latitude, mapRegion.longitude]);
 
   const toggleLayer = useCallback((layerId: string) => {
     setLayers(prev => {
