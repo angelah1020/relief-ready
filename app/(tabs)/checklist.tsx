@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   userSenderName: {
-    color: '#354eab',
+    color: '#ffffff',
     textAlign: 'right',
   },
   botSenderName: {
@@ -278,10 +278,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 20,
+    opacity: 0.85,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
   userBubble: {
     backgroundColor: '#354eab',
     borderBottomRightRadius: 4,
+    borderWidth: 1,
+    borderColor: '#ffffff',
   },
   botBubble: {
     backgroundColor: 'rgba(255, 255, 255, 0.80)',

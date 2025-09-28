@@ -19,6 +19,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const { signIn } = useAuth();
   const router = useRouter();
 
@@ -60,7 +61,7 @@ export default function LoginScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, focusedInput === 'email' && styles.inputFocused]}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Enter your email"
@@ -68,19 +69,23 @@ export default function LoginScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                onFocus={() => setFocusedInput('email')}
+                onBlur={() => setFocusedInput(null)}
               />
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, focusedInput === 'password' && styles.inputFocused]}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Enter your password"
                 placeholderTextColor="#6b7280"
                 secureTextEntry
                 autoCapitalize="none"
+                onFocus={() => setFocusedInput('password')}
+                onBlur={() => setFocusedInput(null)}
               />
             </View>
 
@@ -131,9 +136,10 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: colors.lightBlue,
+    color: '#354eab',
     textAlign: 'center',
     marginTop: 16,
+    fontStyle: 'italic',
   },
   form: {
     width: '100%',
@@ -156,6 +162,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: colors.primary,
+  },
+  inputFocused: {
+    borderColor: '#354eab',
+    borderWidth: 2,
   },
   button: {
     backgroundColor: colors.buttonPrimary,

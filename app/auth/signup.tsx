@@ -24,6 +24,7 @@ export default function SignupScreen() {
   const [lastName, setLastName] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const { signUp } = useAuth();
   const router = useRouter();
 
@@ -101,14 +102,12 @@ export default function SignupScreen() {
               style={styles.logo}
               resizeMode="contain"
             />
-            <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Join Relief Ready</Text>
           </View>
 
           <View style={styles.form}>
             {/* Profile Photo */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Profile Photo (Optional)</Text>
               <TouchableOpacity style={styles.photoContainer} onPress={handleImagePicker}>
                 {profilePhoto ? (
                   <Image source={{ uri: profilePhoto }} style={styles.profilePhoto} />
@@ -126,23 +125,27 @@ export default function SignupScreen() {
               <View style={[styles.inputGroup, styles.nameField]}>
                 <Text style={styles.label}>First Name *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, focusedInput === 'firstName' && styles.inputFocused]}
                   value={firstName}
                   onChangeText={setFirstName}
                   placeholder="First name"
                   placeholderTextColor="#6b7280"
                   autoCapitalize="words"
+                  onFocus={() => setFocusedInput('firstName')}
+                  onBlur={() => setFocusedInput(null)}
                 />
               </View>
               <View style={[styles.inputGroup, styles.nameField]}>
                 <Text style={styles.label}>Last Name *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, focusedInput === 'lastName' && styles.inputFocused]}
                   value={lastName}
                   onChangeText={setLastName}
                   placeholder="Last name"
                   placeholderTextColor="#6b7280"
                   autoCapitalize="words"
+                  onFocus={() => setFocusedInput('lastName')}
+                  onBlur={() => setFocusedInput(null)}
                 />
               </View>
             </View>
@@ -150,7 +153,7 @@ export default function SignupScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, focusedInput === 'email' && styles.inputFocused]}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Enter your email"
@@ -158,32 +161,38 @@ export default function SignupScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                onFocus={() => setFocusedInput('email')}
+                onBlur={() => setFocusedInput(null)}
               />
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, focusedInput === 'password' && styles.inputFocused]}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Create a password"
                 placeholderTextColor="#6b7280"
                 secureTextEntry
                 autoCapitalize="none"
+                onFocus={() => setFocusedInput('password')}
+                onBlur={() => setFocusedInput(null)}
               />
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Confirm Password *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, focusedInput === 'confirmPassword' && styles.inputFocused]}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="Confirm your password"
                 placeholderTextColor="#6b7280"
                 secureTextEntry
                 autoCapitalize="none"
+                onFocus={() => setFocusedInput('confirmPassword')}
+                onBlur={() => setFocusedInput(null)}
               />
             </View>
 
@@ -213,11 +222,12 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#ffffff',
   },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
+    paddingTop: 60,
   },
   content: {
     flex: 1,
@@ -226,7 +236,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 32,
   },
   logo: {
     width: 300,
@@ -241,8 +251,9 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#354eab',
     textAlign: 'center',
+    fontStyle: 'italic',
   },
   form: {
     width: '100%',
@@ -265,6 +276,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: '#1f2937',
+  },
+  inputFocused: {
+    borderColor: '#354eab',
+    borderWidth: 2,
   },
   button: {
     backgroundColor: '#354eab',

@@ -203,11 +203,14 @@ export default function DashboardScreen() {
           <View style={styles.donutOuter}>
             {/* Background circle */}
             <View style={[styles.donutBackground, { borderColor: color + '20' }]} />
-            {/* Progress indicator */}
-            <View style={[styles.donutProgress, { 
-              borderColor: color,
-              transform: [{ rotate: `${-90 + (progress * 360)}deg` }]
-            }]} />
+            {/* Progress indicator - only show if progress > 0 */}
+            {progress > 0 && (
+              <View style={[styles.donutProgress, { 
+                borderColor: 'transparent',
+                borderLeftColor: color,
+                transform: [{ rotate: `${-90 + (progress * 360)}deg` }]
+              }]} />
+            )}
             <View style={styles.donutInner}>
               <Icon size={22} color={color} />
               <Text style={[styles.donutPercentage, { color }]}>
@@ -219,7 +222,7 @@ export default function DashboardScreen() {
         <Text style={styles.donutLabel}>{label}</Text>
         <View style={[styles.readinessIndicator, { 
           backgroundColor: readiness_percentage >= 80 ? '#8B5CF6' : 
-                           readiness_percentage >= 50 ? '#6366F1' : '#A855F7'
+                           readiness_percentage >= 50 ? '#6366F1' : colors.primary
         }]}>
           <Text style={styles.readinessText}>
             {readiness_percentage >= 80 ? 'Ready' : 
@@ -252,47 +255,41 @@ export default function DashboardScreen() {
         )}
       </View>
 
-      {/* Enhanced Welcome Box */}
-      <View style={styles.welcomeBox}>
-        <View style={styles.welcomeTopSection}>
-          <View style={styles.welcomeDecorLeft} />
-          <Text style={styles.welcomeEmoji}>🏠</Text>
-          <View style={styles.welcomeDecorRight} />
+      {/* Disaster Readiness Overview */}
+      <View style={styles.readinessSection}>
+        <View style={styles.readinessHeader}>
+          <Text style={styles.readinessTitle}>Readiness Overview</Text>
+          <View style={styles.readinessAccent} />
         </View>
-        <View style={styles.welcomeTextContainer}>
-          <Text style={styles.welcomeTitle}>Your family's safety starts here!</Text>
-          <Text style={styles.welcomeSubtitle}>Stay prepared, stay protected 🛡️</Text>
-        </View>
-        <View style={styles.welcomeBottomPattern}>
-          <View style={styles.patternDot} />
-          <View style={styles.patternDot} />
-          <View style={styles.patternDot} />
+        <Text style={styles.readinessSubtitle}>Track your emergency preparedness progress</Text>
+        <View style={styles.donutGrid}>
+          {donutData.map(renderDonut)}
         </View>
       </View>
 
-      {/* Active Alert Box (if there's an active alert) */}
+      {/* Disaster Radar Box (if there's an active alert) */}
       {activeAlert ? (
         <View style={styles.activeAlertBox}>
           <View style={styles.alertBoxTopSection}>
             <View style={styles.alertIconContainer}>
-              <AlertTriangle size={24} color="#6366F1" />
+              <AlertTriangle size={24} color={colors.primary} />
             </View>
             <View style={styles.alertHeaderContent}>
-              <Text style={styles.activeAlertTitle}>🚨 Active Alert</Text>
+              <Text style={styles.activeAlertTitle}>DISASTER RADAR</Text>
               <Text style={styles.activeAlertEvent}>{activeAlert.properties?.event || 'Weather Alert'}</Text>
             </View>
           </View>
           
           <View style={styles.alertDetailsContainer}>
             <View style={styles.alertDetailRow}>
-              <MapPin size={16} color="#8B5CF6" />
+              <MapPin size={16} color={colors.primary} />
               <Text style={styles.alertDetailText}>
                 {activeAlert.properties?.areaDesc || 'Local area'}
               </Text>
             </View>
             {activeAlert.properties?.ends && (
               <View style={styles.alertDetailRow}>
-                <Clock size={16} color="#8B5CF6" />
+                <Clock size={16} color={colors.primary} />
                 <Text style={styles.alertDetailText}>
                   Ends: {formatAlertTime(activeAlert.properties.ends)}
                 </Text>
@@ -322,15 +319,6 @@ export default function DashboardScreen() {
           </Text>
         </View>
       )}
-
-      {/* Disaster Readiness Overview */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Readiness Overview</Text>
-        <View style={styles.donutGrid}>
-          {donutData.map(renderDonut)}
-        </View>
-      </View>
-
 
       {/* Disaster Detail Modal */}
       {selectedDisaster && (
@@ -375,92 +363,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.lightBlue,
   },
-  welcomeBox: {
-    backgroundColor: '#FAFAFF',
-    borderRadius: 28,
-    padding: 28,
-    marginHorizontal: 24,
-    marginBottom: 20,
-    shadowColor: '#8B5CF6',
-    shadowOffset: {
-      width: 0,
-      height: 12,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 10,
-    borderWidth: 2,
-    borderColor: '#DDD6FE',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  welcomeTextContainer: {
-    alignItems: 'center',
-  },
-  welcomeTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#4F46E5',
-    textAlign: 'center',
-    marginBottom: 8,
-    letterSpacing: 0.8,
-    lineHeight: 28,
-  },
-  welcomeSubtitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#6B46C1',
-    textAlign: 'center',
-    opacity: 0.9,
-    letterSpacing: 0.3,
-  },
-  welcomeTopSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  welcomeDecorLeft: {
-    width: 40,
-    height: 2,
-    backgroundColor: '#A78BFA',
-    borderRadius: 1,
-    marginRight: 16,
-  },
-  welcomeDecorRight: {
-    width: 40,
-    height: 2,
-    backgroundColor: '#A78BFA',
-    borderRadius: 1,
-    marginLeft: 16,
-  },
-  welcomeEmoji: {
-    fontSize: 36,
-    textAlign: 'center',
-  },
-  welcomeBottomPattern: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 20,
-    gap: 8,
-  },
-  patternDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#A78BFA',
-    opacity: 0.7,
-  },
   activeAlertBox: {
     backgroundColor: '#EEF2FF',
-    borderColor: '#6366F1',
+    borderColor: colors.primary,
     borderWidth: 2,
     borderRadius: 20,
     padding: 24,
     marginHorizontal: 24,
     marginBottom: 24,
-    shadowColor: '#6366F1',
+    shadowColor: colors.primary,
     shadowOffset: {
       width: 0,
       height: 6,
@@ -486,13 +397,13 @@ const styles = StyleSheet.create({
   activeAlertTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6366F1',
+    color: colors.primary,
     marginBottom: 4,
   },
   activeAlertEvent: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#4F46E5',
+    color: colors.primary,
   },
   alertDetailsContainer: {
     backgroundColor: '#F8FAFF',
@@ -524,13 +435,13 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   viewOnMapButton: {
-    backgroundColor: '#8B5CF6',
+    backgroundColor: colors.primary,
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 24,
     alignSelf: 'center',
     width: '100%',
-    shadowColor: '#8B5CF6',
+    shadowColor: colors.primary,
     shadowOffset: {
       width: 0,
       height: 4,
@@ -580,6 +491,33 @@ const styles = StyleSheet.create({
     color: colors.primary,
     marginBottom: 16,
   },
+  readinessSection: {
+    marginBottom: 32,
+    paddingHorizontal: 24,
+  },
+  readinessHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  readinessTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.primary,
+    flex: 1,
+  },
+  readinessAccent: {
+    width: 40,
+    height: 3,
+    backgroundColor: colors.secondary,
+    borderRadius: 2,
+  },
+  readinessSubtitle: {
+    fontSize: 16,
+    color: colors.secondary,
+    marginBottom: 20,
+    fontStyle: 'italic',
+  },
   donutGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -589,7 +527,7 @@ const styles = StyleSheet.create({
   donutCard: {
     backgroundColor: colors.cardBackground,
     borderRadius: 20,
-    padding: 20,
+    padding: 24,
     alignItems: 'center',
     shadowColor: '#8B5CF6',
     shadowOffset: {
@@ -601,6 +539,7 @@ const styles = StyleSheet.create({
     elevation: 6,
     borderWidth: 1,
     borderColor: '#C7D2FE',
+    opacity: 0.85,
   },
   donutContainer: {
     marginBottom: 12,
@@ -634,12 +573,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   donutPercentage: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 'bold',
     marginTop: 2,
   },
   donutLabel: {
-    fontSize: 13,
+    fontSize: 9,
     fontWeight: '600',
     color: colors.primary,
     textAlign: 'center',
@@ -652,7 +591,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   readinessText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '600',
     color: colors.white,
     textAlign: 'center',
