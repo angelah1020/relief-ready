@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,14 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { supabase, Tables } from '@/lib/supabase';
 import { useHousehold } from '@/contexts/HouseholdContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMap } from '@/contexts/MapContext';
 import DisasterDetailModal from '@/components/DisasterDetailModal';
 import { colors } from '@/lib/theme';
+import { getChecklistSummary } from '@/lib/inventory-processing';
 import { 
   AlertTriangle,
   Wind,
@@ -80,6 +81,15 @@ export default function DashboardScreen() {
     }
   }, [currentHousehold]);
 
+  // Refresh data when screen comes into focus (e.g., returning from inventory)
+  useFocusEffect(
+    useCallback(() => {
+      if (currentHousehold) {
+        fetchDashboardData();
+      }
+    }, [currentHousehold])
+  );
+
   useEffect(() => {
     // Check for active alerts affecting the household area
     if (disasterData?.alerts && disasterData.alerts.length > 0) {
@@ -100,20 +110,45 @@ export default function DashboardScreen() {
     if (!currentHousehold) return;
 
     try {
-      // Fetch donut status
-      const { data: donutStatus } = await supabase
-        .from('donut_status')
-        .select('*')
-        .eq('household_id', currentHousehold.id);
+      // Calculate real readiness percentages based on checklist fulfillment
+      const hazardTypes = ['hurricane', 'wildfire', 'flood', 'earthquake', 'tornado', 'heat'];
+      const donutDataArray = [];
 
-      if (donutStatus) {
-        const formattedDonutData = donutStatus.map(item => ({
-          hazard_type: item.hazard_type,
-          readiness_percentage: item.readiness_percentage,
-          ...hazardConfig[item.hazard_type],
-        }));
-        setDonutData(formattedDonutData);
+      for (const hazardType of hazardTypes) {
+        try {
+          // Get checklist summary for this hazard
+          const checklistSummary = await getChecklistSummary(currentHousehold.id, hazardType);
+          
+          if (checklistSummary.length > 0) {
+            // Calculate average fulfillment percentage
+            const totalFulfillment = checklistSummary.reduce((sum, item) => sum + item.fulfillment_percentage, 0);
+            const averageFulfillment = Math.round(totalFulfillment / checklistSummary.length);
+            
+            donutDataArray.push({
+              hazard_type: hazardType,
+              readiness_percentage: averageFulfillment,
+              ...hazardConfig[hazardType],
+            });
+          } else {
+            // No checklist items for this hazard - 0% readiness
+            donutDataArray.push({
+              hazard_type: hazardType,
+              readiness_percentage: 0,
+              ...hazardConfig[hazardType],
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching checklist for ${hazardType}:`, error);
+          // Default to 0% if there's an error
+          donutDataArray.push({
+            hazard_type: hazardType,
+            readiness_percentage: 0,
+            ...hazardConfig[hazardType],
+          });
+        }
       }
+
+      setDonutData(donutDataArray);
 
       // Fetch next best actions
       const { data: nbaActions } = await supabase

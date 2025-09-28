@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native'
-import { useRouter, useLocalSearchParams } from 'expo-router'
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router'
 import { useHousehold } from '@/contexts/HouseholdContext'
 import { 
   getChecklistItems,
@@ -129,12 +129,22 @@ export default function ChecklistDetailScreen() {
   const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
+  const [overallPreparedness, setOverallPreparedness] = useState(0)
 
   useEffect(() => {
     if (hazardType && currentHousehold) {
       loadChecklist()
     }
   }, [hazardType, currentHousehold])
+
+  // Refresh data when screen comes into focus (e.g., returning from inventory)
+  useFocusEffect(
+    useCallback(() => {
+      if (hazardType && currentHousehold) {
+        loadChecklist()
+      }
+    }, [hazardType, currentHousehold])
+  )
 
   const loadChecklist = async () => {
     if (!currentHousehold || !hazardType) return
@@ -153,6 +163,15 @@ export default function ChecklistDetailScreen() {
       
       setChecklistItems(items)
       setChecklistSummary(summary)
+      
+      // Calculate overall preparedness percentage
+      if (summary.length > 0) {
+        const totalFulfillment = summary.reduce((sum, item) => sum + item.fulfillment_percentage, 0)
+        const averageFulfillment = Math.round(totalFulfillment / summary.length)
+        setOverallPreparedness(averageFulfillment)
+      } else {
+        setOverallPreparedness(0)
+      }
       
     } catch (error: any) {
       console.error('Failed to load checklist:', error)
@@ -353,7 +372,7 @@ export default function ChecklistDetailScreen() {
             {getHazardDisplayName(hazardType)} Checklist
           </Text>
           <Text style={styles.headerSubtitle}>
-            {checklistItems.length} items • Based on FEMA guidelines
+            {checklistItems.length} items • {overallPreparedness}% prepared
           </Text>
         </View>
         <TouchableOpacity
@@ -362,6 +381,28 @@ export default function ChecklistDetailScreen() {
         >
           <Info size={20} color="#6b7280" />
         </TouchableOpacity>
+      </View>
+
+      {/* Preparedness Progress Bar */}
+      <View style={styles.progressSection}>
+        <View style={styles.progressHeader}>
+          <Text style={styles.progressLabel}>Overall Preparedness</Text>
+          <Text style={styles.progressPercentage}>{overallPreparedness}%</Text>
+        </View>
+        <View style={styles.progressBarContainer}>
+          <View style={styles.overallProgressBar}>
+            <View 
+              style={[
+                styles.overallProgressFill, 
+                { 
+                  width: `${overallPreparedness}%`,
+                  backgroundColor: overallPreparedness >= 80 ? '#10B981' : 
+                                 overallPreparedness >= 50 ? '#F59E0B' : '#EF4444'
+                }
+              ]} 
+            />
+          </View>
+        </View>
       </View>
 
       {/* Info Panel */}
@@ -558,6 +599,42 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#6b7280',
     marginTop: 2,
+  },
+  progressSection: {
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  progressPercentage: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  progressBarContainer: {
+    width: '100%',
+  },
+  overallProgressBar: {
+    height: 8,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  overallProgressFill: {
+    height: '100%',
+    borderRadius: 4,
   },
   backButtonText: {
     fontSize: 16,
