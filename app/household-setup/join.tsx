@@ -67,7 +67,7 @@ export default function JoinHouseholdScreen() {
       setUnclaimedMembers(members || []);
       setShowMemberList(true);
     } catch (error: any) {
-      console.error('Error validating join code:', error);
+      // Error validating join code
       Alert.alert('Error', error.message || 'Failed to validate join code');
     } finally {
       setLoading(false);
@@ -157,9 +157,9 @@ export default function JoinHouseholdScreen() {
       try {
         const { generateAllChecklists } = await import('@/lib/checklist');
         await generateAllChecklists(household.id);
-        console.log('Checklists regenerated after member join');
+        // Checklists regenerated after member join
       } catch (checklistError) {
-        console.error('Failed to regenerate checklists:', checklistError);
+        // Failed to regenerate checklists
         // Don't fail the join process if checklist generation fails
       }
 
@@ -173,7 +173,7 @@ export default function JoinHouseholdScreen() {
         },
       ]);
     } catch (error: any) {
-      console.error('Error joining household:', error);
+      // Error joining household
       Alert.alert('Error', error.message || 'Failed to join household');
     } finally {
       setLoading(false);

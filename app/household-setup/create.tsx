@@ -550,13 +550,13 @@ export default function CreateHouseholdScreen() {
         try {
           const { generateAllChecklists } = await import('@/lib/checklist');
           await generateAllChecklists(household.id);
-          console.log('Background checklist generation completed');
+          // Background checklist generation completed
         } catch (checklistError) {
-          console.error('Background checklist generation failed:', checklistError);
+          // Background checklist generation failed
         }
       }, 100); // Small delay to let the UI update first
     } catch (error: any) {
-      console.error('Error creating household:', error);
+      // Error creating household
       Alert.alert('Error', error.message || 'Failed to create household');
     } finally {
       setLoading(false);

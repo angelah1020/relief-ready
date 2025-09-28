@@ -51,7 +51,7 @@ export async function geocodeZipCode(zipCode: string, country: string = 'US'): P
     };
 
   } catch (error) {
-    console.warn('Geocoding failed, using approximate coordinates:', error);
+    // Geocoding failed, using approximate coordinates
     return getApproximateCoordinates(zipCode);
   }
 }

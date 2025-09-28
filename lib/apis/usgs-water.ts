@@ -85,7 +85,6 @@ class USGSWaterApi {
       const bbox = `${adjustedMinLng},${adjustedMinLat},${adjustedMaxLng},${adjustedMaxLat}`;
       const url = `${this.baseUrl}?format=json&bBox=${bbox}&parameterCd=00065&siteStatus=active`;
       
-      console.log(`Fetching flood gauges with bbox: ${bbox} (original: ${minLongitude},${minLatitude},${maxLongitude},${maxLatitude})`);
       
       const response = await fetch(url, {
         headers: {
@@ -95,16 +94,15 @@ class USGSWaterApi {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.warn(`USGS Water API error: ${response.status} ${response.statusText}`, errorText);
+        // USGS Water API error
         throw new Error(`USGS Water API error: ${response.status} ${response.statusText}`);
       }
 
       const data: USGSWaterResponse = await response.json();
       const gauges = this.parseWaterData(data);
-      console.log(`Fetched ${gauges.length} flood gauges from USGS API`);
       return gauges;
     } catch (error) {
-      console.warn('USGS Water API unavailable, using mock data:', error);
+      // USGS Water API unavailable, using mock data
       return this.getMockFloodGauges(minLatitude, maxLatitude, minLongitude, maxLongitude);
     }
   }

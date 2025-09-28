@@ -88,7 +88,7 @@ export default function ChecklistWithFulfillment({
       setChecklistItems(checklistData);
       setPreparedness(preparednessData);
     } catch (error) {
-      console.error('Error loading checklist data:', error);
+      // Error loading checklist data
       Alert.alert('Error', 'Failed to load checklist data');
     } finally {
       setLoading(false);

@@ -194,7 +194,7 @@ The app emphasizes preparation over panic, providing clear guidance and practica
       
       return text;
     } catch (error) {
-      console.error('Error generating AI response:', error);
+      // Error generating AI response
       return this.getFallbackResponse(userMessage);
     }
   }

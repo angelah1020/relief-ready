@@ -161,7 +161,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
         setLastUpdated(new Date(savedLastUpdated));
       }
     } catch (error) {
-      console.error('Error loading map preferences:', error);
+      // Error loading map preferences - continue with defaults
     }
   };
 
@@ -173,7 +173,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
         [STORAGE_KEYS.LAST_UPDATED, new Date().toISOString()],
       ]);
     } catch (error) {
-      console.error('Error saving map preferences:', error);
+      // Error saving map preferences - continue without saving
     }
   };
 
@@ -190,7 +190,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
       
       return granted;
     } catch (error) {
-      console.error('Error requesting location permission:', error);
+      // Error requesting location permission
       return false;
     }
   };
@@ -201,7 +201,6 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const enabledLayers = layers.filter(layer => layer.enabled);
-      console.log('Enabled layers:', enabledLayers.map(l => l.id));
       const newData: DisasterData = {
         alerts: [],
         hurricanes: [],
@@ -218,7 +217,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
         promises.push(
           nwsApi.getActiveAlerts()
             .then(response => { newData.alerts = response.features; })
-            .catch(error => console.warn('Failed to fetch NWS alerts:', error))
+            .catch(error => { /* Failed to fetch NWS alerts */ })
         );
       }
 
@@ -227,9 +226,8 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
           nwsApi.getHurricaneAlerts()
             .then(hurricanes => { 
               newData.hurricanes = hurricanes;
-              console.log(`Fetched ${hurricanes.length} hurricane alerts`);
             })
-            .catch(error => console.warn('Failed to fetch hurricane alerts:', error))
+            .catch(error => { /* Failed to fetch hurricane alerts */ })
         );
       }
 
@@ -237,7 +235,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
         promises.push(
           usgsApi.getRecentEarthquakes()
             .then(response => { newData.earthquakes = response.features; })
-            .catch(error => console.warn('Failed to fetch earthquakes:', error))
+            .catch(error => { /* Failed to fetch earthquakes */ })
         );
       }
 
@@ -254,9 +252,8 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
           nasaApi.getActiveFiresVIIRS(fireBoundingBox, 7) // Get fires from past 7 days
             .then(fires => { 
               newData.wildfires = fires;
-              console.log(`Fetched ${fires.length} fire hotspots from FIRMS API`);
             })
-            .catch(error => console.warn('Failed to fetch wildfires:', error))
+            .catch(error => { /* Failed to fetch wildfires */ })
         );
       }
 
@@ -269,13 +266,11 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
             mapRegion.longitude + mapRegion.longitudeDelta
           )
             .then(gauges => { newData.floodGauges = gauges; })
-            .catch(error => console.warn('Failed to fetch flood gauges:', error))
+            .catch(error => { /* Failed to fetch flood gauges */ })
         );
       }
 
       if (enabledLayers.some(l => l.id === 'shelters')) {
-        console.log('Shelters layer enabled, fetching FEMA Alert Shelters...');
-        
         // Create bounding box around map region for efficient API query
         const boundingBox = {
           minLat: mapRegion.latitude - mapRegion.latitudeDelta,
@@ -284,21 +279,16 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
           maxLng: mapRegion.longitude + mapRegion.longitudeDelta,
         };
         
-        console.log('Fetching shelters with bounding box:', boundingBox);
-        
         promises.push(
           femaApi.fetchAllShelters(boundingBox)
             .then(shelters => { 
               newData.shelters = shelters;
-              console.log(`Fetched ${shelters.length} FEMA Shelters (unified Shelter Locations API)`);
             })
             .catch(error => {
-              console.warn('Failed to fetch FEMA Shelters:', error);
+              // Failed to fetch FEMA Shelters
               newData.shelters = [];
             })
         );
-      } else {
-        console.log('Shelters layer not enabled');
       }
 
       await Promise.all(promises);
@@ -307,7 +297,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
       setLastUpdated(new Date());
       
     } catch (error) {
-      console.error('Error refreshing disaster data:', error);
+      // Error refreshing disaster data
     } finally {
       setLoading(false);
     }
@@ -374,7 +364,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
       
       updateMapRegion(newRegion);
     } catch (error) {
-      console.error('Error getting current location:', error);
+      // Error getting current location
     }
   }, [locationPermission, updateMapRegion]);
 

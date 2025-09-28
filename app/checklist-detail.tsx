@@ -152,14 +152,11 @@ export default function ChecklistDetailScreen() {
     try {
       setLoading(true)
       
-      console.log('Loading checklist for:', { householdId: currentHousehold.id, hazardType })
       
       const [items, summary] = await Promise.all([
         getChecklistItems(currentHousehold.id, hazardType),
         getChecklistSummary(currentHousehold.id, hazardType)
       ])
-      console.log('Checklist items loaded:', items)
-      console.log('Checklist summary loaded:', summary)
       
       setChecklistItems(items)
       setChecklistSummary(summary)
@@ -174,7 +171,7 @@ export default function ChecklistDetailScreen() {
       }
       
     } catch (error: any) {
-      console.error('Failed to load checklist:', error)
+      // Failed to load checklist
       Alert.alert('Error', `Failed to load checklist: ${error?.message || 'Unknown error'}`)
       router.back()
     } finally {
@@ -188,18 +185,16 @@ export default function ChecklistDetailScreen() {
     try {
       setGenerating(true)
       
-      console.log('Starting checklist generation...')
       await generateChecklist({
         household_id: currentHousehold.id,
         hazard_type: hazardType
       })
       
-      console.log('Checklist generation completed, reloading...')
       // Reload the checklist after generation
       await loadChecklist()
       
     } catch (error: any) {
-      console.error('Failed to generate checklist:', error)
+      // Failed to generate checklist
       
       // Check if it's a quota error and show helpful message
       const errorMessage = (error instanceof Error ? error.message : 'Unknown error').toLowerCase();

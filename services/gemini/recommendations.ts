@@ -64,7 +64,7 @@ export class RecommendationEngine {
       
       return this.parseRecommendationsResponse(text);
     } catch (error) {
-      console.error('Error generating recommendations:', error);
+      // Error generating recommendations
       return this.getFallbackRecommendations(context);
     }
   }
@@ -129,7 +129,7 @@ Focus on practical, immediately actionable items that will make the biggest diff
         actionItems: Array.isArray(rec.actionItems) ? rec.actionItems : ['Review your emergency supplies']
       }));
     } catch (error) {
-      console.error('Error parsing recommendations response:', error);
+      // Error parsing recommendations response
       return this.getFallbackRecommendations({} as RecommendationContext);
     }
   }

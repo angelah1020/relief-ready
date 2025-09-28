@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!result.error && result.data.user) {
       // Give the trigger time to create the account
       setTimeout(() => {
-        console.log('Account should be created by database trigger');
+        // Account should be created by database trigger
       }, 1000);
     }
     

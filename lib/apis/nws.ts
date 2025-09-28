@@ -136,7 +136,7 @@ class NWSApi {
         features: filteredFeatures
       };
     } catch (error) {
-      console.warn('NWS API error:', error);
+      // NWS API error
       // Return mock data on error
       return {
         type: 'FeatureCollection',
@@ -182,7 +182,6 @@ class NWSApi {
    */
   async getHurricaneAlerts(): Promise<HurricaneAlert[]> {
     try {
-      console.log('Fetching hurricane and tropical storm alerts...');
       
       const hurricaneEvents = [
         'Hurricane Warning',
@@ -202,7 +201,7 @@ class NWSApi {
           const enhancedAlerts = response.features.map(alert => this.enhanceHurricaneAlert(alert));
           allAlerts.push(...enhancedAlerts);
         } catch (error) {
-          console.warn(`Failed to fetch ${event} alerts:`, error);
+          // Failed to fetch alerts for this event type
         }
       }
 
@@ -211,11 +210,10 @@ class NWSApi {
         arr.findIndex(a => a.id === alert.id) === index
       );
 
-      console.log(`Found ${uniqueAlerts.length} hurricane/tropical storm alerts`);
       return uniqueAlerts;
 
     } catch (error) {
-      console.warn('Failed to fetch hurricane alerts:', error);
+      // Failed to fetch hurricane alerts
       return [];
     }
   }

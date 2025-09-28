@@ -65,7 +65,7 @@ export default function InventoryScreen() {
         organizeItemsByCategory(data);
       }
     } catch (error) {
-      console.error('Error fetching inventory:', error);
+      // Error fetching inventory
     } finally {
       setLoading(false);
     }
@@ -140,7 +140,7 @@ export default function InventoryScreen() {
         [{ text: 'OK' }]
       );
     } catch (error) {
-      console.error('Error categorizing item:', error);
+      // Error categorizing item
       Alert.alert('Error', 'Failed to categorize item. Please try again.');
     } finally {
       setIsCategorizing(false);
@@ -224,7 +224,7 @@ export default function InventoryScreen() {
       fetchInventoryItems();
       Alert.alert('Success', editingItem ? 'Item updated!' : 'Item added!');
     } catch (error: any) {
-      console.error('Error saving item:', error);
+      // Error saving item
       Alert.alert('Error', error.message || 'Failed to save item');
     } finally {
       setIsSaving(false);
@@ -252,7 +252,7 @@ export default function InventoryScreen() {
               fetchInventoryItems();
               Alert.alert('Success', 'Item deleted!');
             } catch (error: any) {
-              console.error('Error deleting item:', error);
+              // Error deleting item
               Alert.alert('Error', error.message || 'Failed to delete item');
             }
           },

@@ -37,7 +37,6 @@ export default function AlertPolygon({ alert, onPress }: AlertPolygonProps) {
           coord.longitude >= -180 && coord.longitude <= 180
         );
     } catch (error) {
-      console.warn('Error parsing alert polygon coordinates:', error);
       return [];
     }
   };
