@@ -15,9 +15,10 @@ import { useHousehold } from '@/contexts/HouseholdContext';
 import { Plus, Edit, Trash2, X, Sparkles } from 'lucide-react-native';
 import { colors } from '@/lib/theme';
 import { inventoryCategorizer, CategoryKey, INVENTORY_CATEGORIES } from '@/services/gemini/categorizer';
+import { processAndSaveInventoryItem, updateInventoryItemWithAI } from '@/lib/inventory-processing';
 
 interface InventoryItemForm {
-  description: string;
+  item_key: string;
   quantity: string;
   unit: string;
   location: string;
@@ -36,7 +37,7 @@ export default function InventoryScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [categorizedItems, setCategorizedItems] = useState<{[key: string]: Tables<'inventory_items'>[]}>({});
   const [formData, setFormData] = useState<InventoryItemForm>({
-    description: '',
+    item_key: '',
     quantity: '',
     unit: 'item',
     location: '',
@@ -70,6 +71,27 @@ export default function InventoryScreen() {
     }
   };
 
+  // Helper function to get category from canonical key (same as checklist)
+  const getCategoryFromCanonicalKey = (canonicalKey: string): string => {
+    const categoryMap: Record<string, string> = {
+      'drinking_water': 'Water & Food',
+      'non_perishable_food': 'Water & Food',
+      'first_aid_kit': 'Medical & First Aid',
+      'flashlight': 'Lighting & Power',
+      'batteries': 'Lighting & Power',
+      'radio': 'Communication & Navigation',
+      'blankets': 'Shelter & Warmth',
+      'toilet_paper': 'Sanitation & Hygiene',
+      'whistle': 'Tools & Safety',
+      'cash': 'Important Documents & Money',
+      'pet_food': 'Pets',
+      'pet_carrier': 'Pets',
+      'pet_leash': 'Pets',
+      'pet_medications': 'Pets',
+    }
+    return categoryMap[canonicalKey] || 'Tools & Safety'
+  }
+
   const organizeItemsByCategory = (items: Tables<'inventory_items'>[]) => {
     const categorized: {[key: string]: Tables<'inventory_items'>[]} = {};
     
@@ -81,11 +103,16 @@ export default function InventoryScreen() {
     // Add uncategorized section
     categorized['Uncategorized'] = [];
 
-    // Group items by category
+    // Group items by category using canonical_key
     items.forEach(item => {
-      const category = (item as any).canonical_key;
-      if (category && categorized[category]) {
-        categorized[category].push(item);
+      const canonicalKey = (item as any).canonical_key;
+      if (canonicalKey) {
+        const category = getCategoryFromCanonicalKey(canonicalKey);
+        if (categorized[category]) {
+          categorized[category].push(item);
+        } else {
+          categorized['Uncategorized'].push(item);
+        }
       } else {
         categorized['Uncategorized'].push(item);
       }
@@ -123,7 +150,7 @@ export default function InventoryScreen() {
 
   const resetForm = () => {
     setFormData({
-      description: '',
+      item_key: '',
       quantity: '',
       unit: 'item',
       location: '',
@@ -138,7 +165,7 @@ export default function InventoryScreen() {
     if (item) {
       setEditingItem(item);
       setFormData({
-        description: item.description,
+        item_key: item.item_key,
         quantity: item.quantity.toString(),
         unit: item.unit,
         location: item.location || '',
@@ -158,7 +185,7 @@ export default function InventoryScreen() {
   };
 
   const handleSave = async () => {
-    if (!currentHousehold || !formData.description || !formData.quantity) {
+    if (!currentHousehold || !formData.item_key || !formData.quantity) {
       Alert.alert('Error', 'Please fill in required fields');
       return;
     }
@@ -171,55 +198,26 @@ export default function InventoryScreen() {
 
     setIsSaving(true);
     try {
-      // Auto-categorize if not already categorized
-      let category = formData.category;
-      let ai_confidence = formData.ai_confidence;
-      
-      if (!category) {
-        try {
-          const result = await inventoryCategorizer.categorizeItem(
-            formData.description, 
-            formData.quantity, 
-            formData.unit
-          );
-          category = result.category;
-          ai_confidence = result.confidence;
-        } catch (error) {
-          console.error('Auto-categorization failed:', error);
-          // Continue without categorization if AI fails
-        }
-      }
-
-      const itemData = {
-        household_id: currentHousehold.id,
-        description: formData.description,
-        quantity,
-        unit: formData.unit,
-        location: formData.location || null,
-        expiration_date: formData.expiration_date || null,
-        // AI categorization data
-        canonical_key: category || null,
-        ai_confidence: ai_confidence || null,
-        category: category || 'General',
-        item_key: formData.description.toLowerCase().replace(/\s+/g, '_'),
-        updated_at: new Date().toISOString(),
-      };
-
       if (editingItem) {
-        // Update existing item
-        const { error } = await supabase
-          .from('inventory_items')
-          .update(itemData)
-          .eq('id', editingItem.id);
-
-        if (error) throw error;
+        // Update existing item with AI processing
+        await updateInventoryItemWithAI(
+          editingItem.id,
+          formData.item_key,
+          quantity,
+          formData.unit,
+          formData.location || undefined,
+          formData.expiration_date || undefined
+        );
       } else {
-        // Create new item
-        const { error } = await supabase
-          .from('inventory_items')
-          .insert(itemData);
-
-        if (error) throw error;
+        // Create new item with AI processing
+        await processAndSaveInventoryItem(
+          currentHousehold.id,
+          formData.item_key,
+          quantity,
+          formData.unit,
+          formData.location || undefined,
+          formData.expiration_date || undefined
+        );
       }
 
       closeModal();
@@ -236,7 +234,7 @@ export default function InventoryScreen() {
   const handleDelete = (item: Tables<'inventory_items'>) => {
     Alert.alert(
       'Delete Item',
-      `Are you sure you want to delete "${item.description}"?`,
+      `Are you sure you want to delete "${item.item_key}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -311,7 +309,7 @@ export default function InventoryScreen() {
                     {items.map((item) => (
                       <View key={item.id} style={styles.inventoryItem}>
                         <View style={styles.itemInfo}>
-                          <Text style={styles.itemDescription}>{item.description}</Text>
+                          <Text style={styles.itemDescription}>{item.item_key}</Text>
                           <Text style={styles.itemDetails}>
                             {item.quantity} {item.unit}
                             {item.location && ` • ${item.location}`}
@@ -365,19 +363,19 @@ export default function InventoryScreen() {
 
           <ScrollView style={styles.modalContent}>
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Description *</Text>
+              <Text style={styles.label}>Item Name *</Text>
               <View style={styles.inputWithButton}>
                 <TextInput
                   style={[styles.input, styles.inputWithButtonInput]}
-                  value={formData.description}
-                  onChangeText={(text) => setFormData({ ...formData, description: text })}
+                  value={formData.item_key}
+                  onChangeText={(text) => setFormData({ ...formData, item_key: text })}
                   placeholder="What is this item?"
                   autoCapitalize="sentences"
                 />
                 <TouchableOpacity
                   style={[styles.aiButton, isCategorizing && styles.aiButtonDisabled]}
-                  onPress={() => categorizeItem(formData.description, formData.quantity, formData.unit)}
-                  disabled={isCategorizing || !formData.description.trim()}
+                  onPress={() => categorizeItem(formData.item_key, formData.quantity, formData.unit)}
+                  disabled={isCategorizing || !formData.item_key.trim()}
                 >
                   {isCategorizing ? (
                     <ActivityIndicator size="small" color="#ffffff" />

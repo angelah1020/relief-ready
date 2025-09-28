@@ -8,6 +8,6 @@ export { reliefReadyAI } from './knowledge-base';
 // Re-export types for convenience
 export type { CategoryKey, CategorizationResult } from './categorizer';
 export type { ChatMessage } from './chatbot';
-export type { ChecklistItem, DisasterChecklist } from './checklist-generator';
+export type { ChecklistItem } from './checklist-generator';
 export type { Recommendation, RecommendationContext } from './recommendations';
 export type { AppContext } from './knowledge-base';

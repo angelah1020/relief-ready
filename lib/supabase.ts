@@ -155,30 +155,25 @@ export interface Database {
         Row: {
           id: string;
           household_id: string;
-          category: string;
           item_key: string;
-          description: string;
           quantity_needed: number;
           unit: string;
-          priority: 'high' | 'medium' | 'low';
+          hazard_type: 'hurricane' | 'wildfire' | 'flood' | 'earthquake' | 'tornado' | 'heat';
           created_at: string;
         };
         Insert: {
           id?: string;
           household_id: string;
-          category: string;
           item_key: string;
-          description: string;
           quantity_needed: number;
           unit: string;
-          priority: 'high' | 'medium' | 'low';
+          hazard_type: 'hurricane' | 'wildfire' | 'flood' | 'earthquake' | 'tornado' | 'heat';
           created_at?: string;
         };
         Update: {
-          description?: string;
           quantity_needed?: number;
           unit?: string;
-          priority?: 'high' | 'medium' | 'low';
+          hazard_type?: 'hurricane' | 'wildfire' | 'flood' | 'earthquake' | 'tornado' | 'heat';
         };
       };
       inventory_items: {
@@ -187,9 +182,12 @@ export interface Database {
           household_id: string;
           category: string;
           item_key: string;
-          description: string;
           quantity: number;
           unit: string;
+          ai_confidence?: number;
+          canonical_key?: string;
+          canonical_quantity?: number;
+          canonical_unit?: string;
           expiration_date?: string;
           location?: string;
           created_at: string;
@@ -200,9 +198,12 @@ export interface Database {
           household_id: string;
           category: string;
           item_key: string;
-          description: string;
           quantity: number;
           unit: string;
+          ai_confidence?: number;
+          canonical_key?: string;
+          canonical_quantity?: number;
+          canonical_unit?: string;
           expiration_date?: string;
           location?: string;
           created_at?: string;
@@ -211,9 +212,12 @@ export interface Database {
         Update: {
           category?: string;
           item_key?: string;
-          description?: string;
           quantity?: number;
           unit?: string;
+          ai_confidence?: number;
+          canonical_key?: string;
+          canonical_quantity?: number;
+          canonical_unit?: string;
           expiration_date?: string;
           location?: string;
           updated_at?: string;

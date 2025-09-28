@@ -1,6 +1,8 @@
 import { supabase } from './supabase'
 import { checklistGenerator, type ChecklistItem as GeneratedChecklistItem } from '@/services/gemini/checklist-generator'
 
+
+
 export interface ChecklistItem {
   id?: string
   household_id: string
