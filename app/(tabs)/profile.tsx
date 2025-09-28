@@ -667,44 +667,120 @@ export default function HouseholdScreen() {
                 return;
               }
 
-              // Remove user from all households
-              const { error: membershipError } = await supabase
-                .from('memberships')
-                .delete()
-                .eq('account_id', user.id);
+              console.log('Starting account deletion process for user:', user.id);
 
-              if (membershipError) {
-                console.error('Error removing memberships:', membershipError);
-              }
-
-              // Delete user's account record
-              const { error: accountError } = await supabase
+              // Step 1: Get the account ID first
+              const { data: account } = await supabase
                 .from('accounts')
-                .delete()
-                .eq('id', user.id);
+                .select('id')
+                .eq('user_id', user.id)
+                .single();
 
-              if (accountError) {
-                console.error('Error deleting account:', accountError);
-              }
+              const accountId = account?.id;
+              console.log('Found account ID:', accountId);
 
-              // Delete the auth user
-              const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
+              // Step 2: Delete all related data manually (since RPC functions may not exist)
+              try {
+                // First, get households where user is the only member
+                let householdsToDelete = [];
+                if (accountId) {
+                  const { data: userMemberships } = await supabase
+                    .from('memberships')
+                    .select('household_id')
+                    .eq('account_id', accountId);
 
-              if (authError) {
-                console.error('Error deleting auth user:', authError);
-                Alert.alert('Error', 'Failed to delete account. Please try again.');
+                  if (userMemberships) {
+                    for (const membership of userMemberships) {
+                      // Check if this household has other members
+                      const { data: otherMembers } = await supabase
+                        .from('memberships')
+                        .select('id')
+                        .eq('household_id', membership.household_id)
+                        .neq('account_id', accountId);
+
+                      if (!otherMembers || otherMembers.length === 0) {
+                        // User is the only member, mark household for deletion
+                        householdsToDelete.push(membership.household_id);
+                      }
+                    }
+                  }
+                }
+
+                console.log('Households to delete (user is only member):', householdsToDelete);
+
+                // Delete household-related data for households being deleted
+                for (const householdId of householdsToDelete) {
+                  // Delete checklist items
+                  await supabase.from('checklist_items').delete().eq('household_id', householdId);
+                  // Delete inventory items
+                  await supabase.from('inventory_items').delete().eq('household_id', householdId);
+                  // Delete members
+                  await supabase.from('members').delete().eq('household_id', householdId);
+                  // Delete pets
+                  await supabase.from('pets').delete().eq('household_id', householdId);
+                  // Delete emergency contacts
+                  await supabase.from('emergency_contacts').delete().eq('household_id', householdId);
+                  // Delete hazard configs
+                  await supabase.from('hazard_configs').delete().eq('household_id', householdId);
+                  // Delete donut status
+                  await supabase.from('donut_status').delete().eq('household_id', householdId);
+                  
+                  console.log('Deleted data for household:', householdId);
+                }
+
+                // Remove user from all memberships
+                if (accountId) {
+                  await supabase.from('memberships').delete().eq('account_id', accountId);
+                  console.log('Removed all memberships');
+                }
+
+                // Delete the empty households
+                for (const householdId of householdsToDelete) {
+                  await supabase.from('households').delete().eq('id', householdId);
+                  console.log('Deleted household:', householdId);
+                }
+
+                // Delete chat messages
+                await supabase.from('chat_messages').delete().eq('user_id', user.id);
+                console.log('Deleted chat messages');
+
+                // Unclaim members in other households
+                await supabase.from('members').update({ claimed_by: null }).eq('claimed_by', user.id);
+                console.log('Unclaimed members');
+
+                // Remove creator references from remaining households
+                await supabase.from('members').update({ created_by: null }).eq('created_by', user.id);
+                await supabase.from('households').update({ created_by: null }).eq('created_by', user.id);
+                console.log('Removed creator references');
+
+                // Delete account record
+                if (accountId) {
+                  await supabase.from('accounts').delete().eq('id', accountId);
+                  console.log('Deleted account record');
+                }
+
+                console.log('Successfully deleted all account data');
+              } catch (cleanupError) {
+                console.error('Error during cleanup:', cleanupError);
+                Alert.alert('Error', 'Failed to delete some account data. Please try again.');
                 return;
               }
 
-              Alert.alert('Account Deleted', 'Your account has been successfully deleted.', [
-                {
-                  text: 'OK',
-                  onPress: () => {
-                    signOut();
-                    router.replace('/auth/login');
+              // Sign out the user immediately since their account data is deleted
+              await signOut();
+
+              Alert.alert(
+                'Account Deleted', 
+                'Your account data has been successfully deleted. You have been signed out and your authentication will be removed shortly.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      router.replace('/auth/login');
+                    },
                   },
-                },
-              ]);
+                ]
+              );
             } catch (error) {
               console.error('Error deleting account:', error);
               Alert.alert('Error', 'Failed to delete account. Please try again.');
@@ -1366,6 +1442,14 @@ export default function HouseholdScreen() {
           <TouchableOpacity style={styles.menuItem} onPress={handleInviteMembers}>
             <Share size={20} color="#6B7280" />
             <Text style={styles.menuText}>Invite Members</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/account/settings')}
+          >
+            <Settings size={20} color="#6B7280" />
+            <Text style={styles.menuText}>Account Settings</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 

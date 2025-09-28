@@ -30,7 +30,7 @@ export default function JoinHouseholdScreen() {
   const [showMemberList, setShowMemberList] = useState(false);
   
   const router = useRouter();
-  const { user, clearNewUserFlag } = useAuth();
+  const { user } = useAuth();
   const { refreshHouseholds } = useHousehold();
 
   const handleValidateCode = async () => {
@@ -167,7 +167,6 @@ export default function JoinHouseholdScreen() {
         {
           text: 'OK',
           onPress: async () => {
-            clearNewUserFlag();
             await refreshHouseholds();
             router.replace('/(tabs)/dashboard');
           },

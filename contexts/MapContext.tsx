@@ -106,9 +106,6 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
   const householdLocation = currentHousehold && currentHousehold.latitude && currentHousehold.longitude
     ? { latitude: currentHousehold.latitude, longitude: currentHousehold.longitude }
     : null;
-    
-  console.log('Current household:', currentHousehold);
-  console.log('Household location:', householdLocation);
 
   // Load saved preferences
   useEffect(() => {
