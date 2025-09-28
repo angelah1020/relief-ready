@@ -135,13 +135,17 @@ class FEMAApi {
     maxLng: number;
   }): Promise<FEMAShelter[]> {
     try {
-      // Exclude closed shelters to focus on relevant ones (open, alert, full, standby)
-      let url = `${this.allSheltersUrl}?where=shelter_status_code%20!=%20%27CLOSED%27&outFields=*&f=json&resultRecordCount=2000`;
+      // Include all shelter types to show current shelter infrastructure
+      // Note: During non-emergency periods, most shelters will be in "CLOSED" status
+      let url = `${this.allSheltersUrl}?where=1=1&outFields=*&f=json&resultRecordCount=2000`;
       
       // Add spatial filter if bounding box provided
       if (boundingBox) {
         const geometry = `${boundingBox.minLng},${boundingBox.minLat},${boundingBox.maxLng},${boundingBox.maxLat}`;
         url += `&geometry=${geometry}&geometryType=esriGeometryEnvelope&inSR=4326&spatialRel=esriSpatialRelIntersects`;
+        console.log('Shelter API URL with spatial filter:', url);
+      } else {
+        console.log('Shelter API URL (no spatial filter):', url);
       }
 
       console.log('Fetching FEMA Shelters from unified API:', url);
@@ -158,7 +162,7 @@ class FEMAApi {
         return [];
       }
 
-      console.log(`Found ${data.features.length} active shelters (non-closed)`);
+      console.log(`Found ${data.features.length} total shelters from FEMA API`);
       
       return data.features.map((feature: any) => this.mapUnifiedShelterFeatureToFEMAShelter(feature))
         .filter((shelter: FEMAShelter | null) => shelter !== null) as FEMAShelter[];

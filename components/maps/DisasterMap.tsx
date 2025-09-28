@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import MapView, { Marker, Polygon, Circle, Region } from 'react-native-maps';
 import { useMap } from '@/contexts/MapContext';
-import { nwsApi } from '@/lib/apis/nws';
+import { nwsApi, HurricaneAlert } from '@/lib/apis/nws';
 import { usgsApi } from '@/lib/apis/usgs';
 import { nasaApi } from '@/lib/apis/nasa';
 import { femaApi } from '@/lib/apis/fema';
@@ -63,6 +63,17 @@ export default function DisasterMap({ style, miniMap = false, zipCode }: Disaste
         const severity = nasaApi.getWildFireSeverity(feature);
         title = `🔥 ${severity.charAt(0).toUpperCase() + severity.slice(1)} Wildfire`;
         message = `Severity: ${severity}\nFire Radiative Power: ${feature.frp} MW\nBrightness: ${feature.brightness}K\nConfidence: ${feature.confidence}%\nDetected: ${nasaApi.formatFireTime(feature.acq_date, feature.acq_time)}`;
+        break;
+        
+      case 'hurricane':
+        const hurricane = feature as HurricaneAlert;
+        const categoryName = nwsApi.getHurricaneCategoryName(hurricane.properties.stormCategory || 0);
+        title = `🌀 ${hurricane.properties.stormName || 'Storm'} - ${categoryName}`;
+        message = `Event: ${hurricane.properties.event}\nArea: ${hurricane.properties.areaDesc}`;
+        if (hurricane.properties.maxWinds) message += `\nMax Winds: ${hurricane.properties.maxWinds} mph`;
+        if (hurricane.properties.movement) message += `\nMovement: ${hurricane.properties.movement}`;
+        if (hurricane.properties.stormSurge) message += `\nStorm Surge: ${hurricane.properties.stormSurge}`;
+        message += `\nSeverity: ${hurricane.properties.severity}\nExpires: ${new Date(hurricane.properties.expires).toLocaleString()}`;
         break;
         
       case 'shelter':
@@ -177,6 +188,43 @@ export default function DisasterMap({ style, miniMap = false, zipCode }: Disaste
     });
   };
 
+  const renderHurricanes = () => {
+    if (!layers.find(l => l.id === 'hurricanes')?.enabled) return null;
+    
+    return disasterData.hurricanes.map((hurricane, index) => {
+      const category = hurricane.properties.stormCategory || 0;
+      const categoryName = nwsApi.getHurricaneCategoryName(category);
+      
+      // Get center point of the alert area for marker placement
+      const centerLat = hurricane.geometry?.coordinates?.[0]?.reduce((sum, coord) => sum + coord[1], 0) / (hurricane.geometry?.coordinates?.[0]?.length || 1) || 0;
+      const centerLng = hurricane.geometry?.coordinates?.[0]?.reduce((sum, coord) => sum + coord[0], 0) / (hurricane.geometry?.coordinates?.[0]?.length || 1) || 0;
+      
+      return (
+        <React.Fragment key={`hurricane-${hurricane.id}-${index}`}>
+          {/* Hurricane alert polygon */}
+          <AlertPolygon 
+            alert={hurricane}
+            onPress={() => handleMarkerPress(hurricane, 'hurricane')}
+          />
+          
+          {/* Hurricane center marker */}
+          <DisasterMarker
+            coordinate={{
+              latitude: centerLat,
+              longitude: centerLng,
+            }}
+            title={`${hurricane.properties.stormName || 'Storm'} - ${categoryName}`}
+            description={`${hurricane.properties.maxWinds || 'Unknown'} mph winds`}
+            color={nwsApi.getHurricaneCategoryColor(category)}
+            size={nwsApi.getHurricaneCategorySize(category)}
+            icon="🌀"
+            onPress={() => handleMarkerPress(hurricane, 'hurricane')}
+          />
+        </React.Fragment>
+      );
+    });
+  };
+
   const renderFloodGauges = () => {
     if (!layers.find(l => l.id === 'floods')?.enabled) return null;
     
@@ -272,6 +320,7 @@ export default function DisasterMap({ style, miniMap = false, zipCode }: Disaste
         {!miniMap && (
           <>
             {renderAlerts()}
+            {renderHurricanes()}
             {renderEarthquakes()}
             {renderWildfires()}
             {renderFloodGauges()}

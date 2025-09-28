@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { nwsApi, NWSAlert } from '@/lib/apis/nws';
+import { nwsApi, NWSAlert, HurricaneAlert } from '@/lib/apis/nws';
 import { usgsApi, USGSEarthquake } from '@/lib/apis/usgs';
 import { nasaApi, NASAFireHotspot } from '@/lib/apis/nasa';
 import { femaApi, FEMAShelter } from '@/lib/apis/fema';
@@ -25,6 +25,7 @@ export interface LayerConfig {
 
 export interface DisasterData {
   alerts: NWSAlert[];
+  hurricanes: HurricaneAlert[];
   earthquakes: USGSEarthquake[];
   wildfires: NASAFireHotspot[];
   shelters: FEMAShelter[];
@@ -61,7 +62,7 @@ const MapContext = createContext<MapContextType | undefined>(undefined);
 
 const DEFAULT_LAYERS: LayerConfig[] = [
   { id: 'alerts', name: 'Weather Alerts', enabled: true, icon: '⚠️', color: '#FF6600' },
-  { id: 'hurricanes', name: 'Hurricanes', enabled: true, icon: '🌧️', color: '#8B00FF' },
+  { id: 'hurricanes', name: 'Hurricanes', enabled: true, icon: '🌀', color: '#8B00FF' },
   { id: 'earthquakes', name: 'Earthquakes', enabled: true, icon: '🌍', color: '#8B4513' },
   { id: 'wildfires', name: 'Wildfires', enabled: true, icon: '🔥', color: '#FF4500' },
   { id: 'floods', name: 'Floods', enabled: true, icon: '🌊', color: '#1E40AF' },
@@ -90,6 +91,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
   const [layers, setLayers] = useState<LayerConfig[]>(DEFAULT_LAYERS);
   const [disasterData, setDisasterData] = useState<DisasterData>({
     alerts: [],
+    hurricanes: [],
     earthquakes: [],
     wildfires: [],
     shelters: [],
@@ -205,6 +207,7 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
       console.log('Enabled layers:', enabledLayers.map(l => l.id));
       const newData: DisasterData = {
         alerts: [],
+        hurricanes: [],
         earthquakes: [],
         wildfires: [],
         shelters: [],
@@ -214,11 +217,22 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
       // Fetch data for enabled layers
       const promises = [];
 
-      if (enabledLayers.some(l => ['alerts', 'hurricanes'].includes(l.id))) {
+      if (enabledLayers.some(l => l.id === 'alerts')) {
         promises.push(
           nwsApi.getActiveAlerts()
             .then(response => { newData.alerts = response.features; })
             .catch(error => console.warn('Failed to fetch NWS alerts:', error))
+        );
+      }
+
+      if (enabledLayers.some(l => l.id === 'hurricanes')) {
+        promises.push(
+          nwsApi.getHurricaneAlerts()
+            .then(hurricanes => { 
+              newData.hurricanes = hurricanes;
+              console.log(`Fetched ${hurricanes.length} hurricane alerts`);
+            })
+            .catch(error => console.warn('Failed to fetch hurricane alerts:', error))
         );
       }
 
@@ -272,6 +286,8 @@ export function MapProvider({ children }: { children: React.ReactNode }) {
           minLng: mapRegion.longitude - mapRegion.longitudeDelta,
           maxLng: mapRegion.longitude + mapRegion.longitudeDelta,
         };
+        
+        console.log('Fetching shelters with bounding box:', boundingBox);
         
         promises.push(
           femaApi.fetchAllShelters(boundingBox)
