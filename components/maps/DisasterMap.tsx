@@ -5,6 +5,7 @@ import { useMap } from '@/contexts/MapContext';
 import { nwsApi, HurricaneAlert } from '@/lib/apis/nws';
 import { usgsApi } from '@/lib/apis/usgs';
 import { nasaApi } from '@/lib/apis/nasa';
+import { nifcApi } from '@/lib/apis/nifc';
 import { femaApi } from '@/lib/apis/fema';
 import DisasterMarker from './DisasterMarker';
 import AlertPolygon from './AlertPolygon';
@@ -60,9 +61,8 @@ export default function DisasterMap({ style, miniMap = false, zipCode }: Disaste
         break;
         
       case 'wildfire':
-        const severity = nasaApi.getWildFireSeverity(feature);
-        title = `🔥 ${severity.charAt(0).toUpperCase() + severity.slice(1)} Wildfire`;
-        message = `Severity: ${severity}\nFire Radiative Power: ${feature.frp} MW\nBrightness: ${feature.brightness}K\nConfidence: ${feature.confidence}%\nDetected: ${nasaApi.formatFireTime(feature.acq_date, feature.acq_time)}`;
+        title = `🔥 ${feature.incidentName}`;
+        message = `Size: ${nifcApi.formatAcres(feature.acres)}\nContainment: ${nifcApi.formatContainment(feature.percentContained)}\nLocation: ${feature.county}, ${feature.state}\nStarted: ${nifcApi.getTimeSinceDiscovery(feature.fireDiscoveryDateTime)}\nCause: ${feature.incidentCause}`;
         break;
         
       case 'hurricane':
@@ -168,18 +168,17 @@ export default function DisasterMap({ style, miniMap = false, zipCode }: Disaste
     if (!layers.find(l => l.id === 'wildfires')?.enabled) return null;
     
     return disasterData.wildfires.map((fire, index) => {
-      const severity = nasaApi.getWildFireSeverity(fire);
       return (
         <DisasterMarker
-          key={`fire-${index}`}
+          key={`fire-${fire.uniqueFireIdentifier}-${index}`}
           coordinate={{
             latitude: fire.latitude,
             longitude: fire.longitude,
           }}
-          title={`${severity.charAt(0).toUpperCase() + severity.slice(1)} Wildfire`}
-          description={`${fire.frp} MW - ${fire.confidence}% confidence`}
-          color={nasaApi.getWildFireColor(fire)}
-          size={nasaApi.getWildFireSize(fire)}
+          title={fire.incidentName}
+          description={`${nifcApi.formatAcres(fire.acres)} - ${nifcApi.formatContainment(fire.percentContained)}`}
+          color={nifcApi.getWildfireStatusColor(fire)}
+          size={nifcApi.getWildfireMarkerSize(fire)}
           icon="🔥"
           onPress={() => handleMarkerPress(fire, 'wildfire')}
         />
